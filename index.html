@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHƯƠNG TRÌNH LẬP LỆNH XUẤT HÀNG</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: none; /* Ẩn toàn bộ nội dung ban đầu */
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 20px;
+        }
+
+        header img {
+            margin-right: 20px;
+        }
+
+        header h1 {
+            margin: 0;
+            color: #2ecc71;
+            text-align: center;
+        }
+
+        h2 {
+            color: #2c3e50;
+        }
+
+        .input-section, .list-section {
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        input[type="text"], input[type="number"], input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button.delete-btn {
+            background-color: #e74c3c;
+            padding: 5px 10px;
+            font-size: 14px;
+            margin-left: 5px;
+        }
+
+        button.delete-all-btn {
+            background-color: #e74c3c;
+            padding: 10px 15px;
+            font-size: 16px;
+        }
+        
+        button.order-btn {
+            background-color: #2ecc71;
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+
+        button.print-btn {
+            background-color: #f39c12;
+            padding: 5px 10px;
+            font-size: 14px;
+            margin-left: 5px;
+        }
+
+        button.edit-btn {
+            background-color: #3498db;
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+
+        button.delete-btn:hover, button.delete-all-btn:hover {
+            background-color: #c0392b;
+        }
+
+        button.order-btn:hover {
+            background-color: #27ae60;
+        }
+
+        button.print-btn:hover {
+            background-color: #e67e22;
+        }
+
+        button.edit-btn:hover {
+            background-color: #2980b9;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .list-header-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+            word-wrap: break-word;
+        }
+        
+        td:last-child {
+            text-align: center;
+        }
+        
+        td .action-buttons {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .hidden {
+            display: none;
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .pagination-controls button {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="main-content">
+        <header>
+            <img src="https://pvgaslpg.com.vn/uploads/LPG%20xanh%20animation.gif" alt="Logo PV Gas LPG" width="150" height="150">
+            <h1>CHƯƠNG TRÌNH LẬP LỆNH XUẤT HÀNG</h1>
+        </header>
+
+        <div id="customer-view">
+            <section class="input-section">
+                <h2>Nhập thông tin khách hàng</h2>
+                <div class="form-group">
+                    <label for="customerId">Mã số khách hàng:</label>
+                    <input type="text" id="customerId" placeholder="Mã số">
+                </div>
+                <div class="form-group">
+                    <label for="customerName">Tên khách hàng:</label>
+                    <input type="text" id="customerName" placeholder="Tên khách hàng">
+                </div>
+                <button id="saveBtn">Lưu khách hàng</button>
+            </section>
+
+            <section class="list-section">
+                <div class="list-header">
+                    <h2>Danh sách khách hàng</h2>
+                    <div class="list-header-buttons">
+                        <button id="importBtn">Nhập từ Excel</button>
+                        <input type="file" id="excelFile" accept=".xlsx, .xls" style="display:none;">
+                        <button id="exportBtn">Xuất ra Excel</button>
+                        <button id="deleteAllCustomersBtn" class="delete-all-btn">Xoá toàn bộ KH</button>
+                        <button id="viewOrdersBtn">Xem danh sách lệnh</button>
+                    </div>
+                </div>
+                
+                <table id="customerTable">
+                    <thead>
+                        <tr>
+                            <th>Thứ tự</th>
+                            <th>Mã số</th>
+                            <th>Tên khách hàng</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </section>
+        </div>
+
+        <div id="order-form-view" class="hidden">
+            <section class="input-section">
+                <h2>Tạo Lệnh Xuất Hàng cho khách hàng: <span id="orderCustomerName" style="color: blue;"></span></h2>
+                <div class="form-group">
+                    <label for="orderDate">Ngày tháng:</label>
+                    <input type="text" id="orderDate" placeholder="dd/mm/yyyy" value="">
+                </div>
+                <div class="form-group">
+                    <label for="orderWarehouse">Kho xuất:</label>
+                    <input type="text" id="orderWarehouse">
+                </div>
+                <div class="form-group">
+                    <label for="orderTransporter">Người vận chuyển:</label>
+                    <input type="text" id="orderTransporter">
+                </div>
+                <div class="form-group">
+                    <label for="orderVehicle">Số xe:</label>
+                    <input type="text" id="orderVehicle">
+                </div>
+                <div class="form-group">
+                    <label for="orderLpg45kg">LPG chai 45 kg:</label>
+                    <input type="number" id="orderLpg45kg" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="orderLpg12kg">LPG chai 12 kg:</label>
+                    <input type="number" id="orderLpg12kg" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="orderLpg11kg">LPG chai 11 kg:</label>
+                    <input type="number" id="orderLpg11kg" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="order45kg">Chai 45 kg:</label>
+                    <input type="number" id="order45kg" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="order45kgDual">Chai 45 kg van kép:</label>
+                    <input type="number" id="order45kgDual" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="order12kg">Chai 12 kg:</label>
+                    <input type="number" id="order12kg" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="order11kg">Chai 11 kg:</label>
+                    <input type="number" id="order11kg" value="0">
+                </div>
+                <button id="submitOrderBtn">Lưu lệnh</button>
+                <button id="backToCustomerListBtn">Quay lại</button>
+            </section>
+        </div>
+
+        <div id="order-list-view" class="hidden">
+            <section class="list-section">
+                <div class="list-header">
+                    <h2>Danh sách các Lệnh Xuất Hàng</h2>
+                    <div class="list-header-buttons">
+                        <button id="deleteAllOrdersBtn" class="delete-all-btn">Xoá tất cả các lệnh</button>
+                        <button id="backToCustomerListBtn2">Quay lại</button>
+                    </div>
+                </div>
+                
+                <table id="orderTable">
+                    <thead>
+                        <tr>
+                            <th>Thứ tự</th>
+                            <th>Tên Khách hàng</th>
+                            <th>Ngày tháng</th>
+                            <th>Kho xuất</th>
+                            <th>Số xe</th>
+                            <th>LPG 45 kg</th>
+                            <th>LPG 12 kg</th>
+                            <th>LPG 11 kg</th>
+                            <th>Chai 45 kg</th>
+                            <th>45 kg van kép</th>
+                            <th>Chai 12 kg</th>
+                            <th>Chai 11 kg</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+                <div class="pagination-controls">
+                    <button id="prevPageBtn">Trang trước</button>
+                    <span id="pageInfo">Trang 1/1</span>
+                    <button id="nextPageBtn">Trang sau</button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, update, remove, push, get, child } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        
+        // --- CHỨC NĂNG YÊU CẦU MẬT KHẨU ---
+        const correctPassword = "mydinh";
+        const mainContent = document.getElementById('main-content');
+        
+        function askForPassword() {
+            let password = prompt("Vui lòng nhập mật khẩu để truy cập:");
+            if (password === correctPassword) {
+                mainContent.style.display = 'block'; // Hiển thị nội dung
+            } else {
+                alert("Mật khẩu không đúng. Vui lòng thử lại.");
+                askForPassword(); // Yêu cầu nhập lại
+            }
+        }
+        
+        window.onload = askForPassword;
+        // --- KẾT THÚC CHỨC NĂNG YÊU CẦU MẬT KHẨU ---
+
+        // Cấu hình Firebase của bạn
+        const firebaseConfig = {
+          apiKey: "AIzaSyBy1H9xX0qwnjpEQngFKpMq56L6VvMWqAI",
+          authDomain: "cnmb-ce04d.firebaseapp.com",
+          databaseURL: "https://cnmb-ce04d-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "cnmb-ce04d",
+          storageBucket: "cnmb-ce04d.firebasestorage.app",
+          messagingSenderId: "854586394737",
+          appId: "1:854586394737:web:ed6ead38961bf534da73d0",
+          measurementId: "G-G7RXWLVV7V"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Lấy các phần tử DOM cho phần khách hàng
+        const customerView = document.getElementById('customer-view');
+        const customerIdInput = document.getElementById('customerId');
+        const customerNameInput = document.getElementById('customerName');
+        const saveBtn = document.getElementById('saveBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const importBtn = document.getElementById('importBtn');
+        const excelFile = document.getElementById('excelFile');
+        const deleteAllCustomersBtn = document.getElementById('deleteAllCustomersBtn');
+        const customerTableBody = document.querySelector('#customerTable tbody');
+        const viewOrdersBtn = document.getElementById('viewOrdersBtn');
+
+        // Lấy các phần tử DOM cho form tạo lệnh
+        const orderFormView = document.getElementById('order-form-view');
+        const orderCustomerName = document.getElementById('orderCustomerName');
+        const orderDateInput = document.getElementById('orderDate');
+        const orderWarehouseInput = document.getElementById('orderWarehouse');
+        const orderTransporterInput = document.getElementById('orderTransporter');
+        const orderVehicleInput = document.getElementById('orderVehicle');
+        const orderLpg45kgInput = document.getElementById('orderLpg45kg');
+        const orderLpg12kgInput = document.getElementById('orderLpg12kg');
+        const orderLpg11kgInput = document.getElementById('orderLpg11kg');
+        const order45kgInput = document.getElementById('order45kg');
+        const order45kgDualInput = document.getElementById('order45kgDual');
+        const order12kgInput = document.getElementById('order12kg');
+        const order11kgInput = document.getElementById('order11kg');
+        const submitOrderBtn = document.getElementById('submitOrderBtn');
+        const backToCustomerListBtn = document.getElementById('backToCustomerListBtn');
+
+        // Lấy các phần tử DOM cho danh sách lệnh
+        const orderListView = document.getElementById('order-list-view');
+        const orderTableBody = document.querySelector('#orderTable tbody');
+        const backToCustomerListBtn2 = document.getElementById('backToCustomerListBtn2');
+        const deleteAllOrdersBtn = document.getElementById('deleteAllOrdersBtn');
+        const prevPageBtn = document.getElementById('prevPageBtn');
+        const nextPageBtn = document.getElementById('nextPageBtn');
+        const pageInfoSpan = document.getElementById('pageInfo');
+
+        // Cấu hình phân trang
+        const ITEMS_PER_PAGE = 50;
+        let currentPage = 1;
+        let allOrders = [];
+
+        let customerData = [];
+        let currentCustomerId = '';
+        let currentOrderKey = null; // Biến mới để lưu key của lệnh đang được chỉnh sửa
+
+        // Hàm ẩn/hiện các phần
+        const showCustomerList = () => {
+            customerView.classList.remove('hidden');
+            orderFormView.classList.add('hidden');
+            orderListView.classList.add('hidden');
+            currentOrderKey = null;
+            submitOrderBtn.textContent = 'Lưu lệnh';
+        };
+
+        const showOrderForm = (customerId, customerName) => {
+            currentCustomerId = customerId;
+            orderCustomerName.textContent = customerName;
+            orderDateInput.value = new Date().toLocaleDateString('vi-VN');
+            orderWarehouseInput.value = '';
+            orderTransporterInput.value = '';
+            orderVehicleInput.value = '';
+            orderLpg45kgInput.value = '0';
+            orderLpg12kgInput.value = '0';
+            orderLpg11kgInput.value = '0';
+            order45kgInput.value = '0';
+            order45kgDualInput.value = '0';
+            order12kgInput.value = '0';
+            order11kgInput.value = '0';
+
+            customerView.classList.add('hidden');
+            orderFormView.classList.remove('hidden');
+            orderListView.classList.add('hidden');
+        };
+
+        // Hàm mới để hiển thị form chỉnh sửa lệnh
+        const showEditOrderForm = (orderKey, order) => {
+            currentOrderKey = orderKey;
+            orderCustomerName.textContent = order.customerName;
+            orderDateInput.value = order.date;
+            orderWarehouseInput.value = order.warehouse;
+            orderTransporterInput.value = order.transporter;
+            orderVehicleInput.value = order.vehicle;
+            orderLpg45kgInput.value = order.lpg45kg;
+            orderLpg12kgInput.value = order.lpg12kg;
+            orderLpg11kgInput.value = order.lpg11kg;
+            order45kgInput.value = order.chai45kg;
+            order45kgDualInput.value = order.chai45kgDual;
+            order12kgInput.value = order.chai12kg;
+            order11kgInput.value = order.chai11kg;
+            
+            submitOrderBtn.textContent = 'Cập nhật lệnh';
+
+            customerView.classList.add('hidden');
+            orderFormView.classList.remove('hidden');
+            orderListView.classList.add('hidden');
+        };
+        
+        const showOrderList = () => {
+            customerView.classList.add('hidden');
+            orderFormView.classList.add('hidden');
+            orderListView.classList.remove('hidden');
+        };
+
+        // --- Xử lý chức năng khách hàng ---
+        saveBtn.addEventListener('click', async () => {
+            const customerId = customerIdInput.value.trim();
+            const customerName = customerNameInput.value.trim();
+
+            if (customerId === '' || customerName === '') {
+                alert('Vui lòng nhập đầy đủ Mã số và Tên khách hàng.');
+                return;
+            }
+
+            const safeCustomerId = customerId.replace(/[.#$[\]]/g, '');
+
+            if (safeCustomerId === '') {
+                alert('Mã số khách hàng không hợp lệ. Vui lòng không sử dụng các ký tự đặc biệt như ., #, $, [, ].');
+                return;
+            }
+
+            // Kiểm tra trùng lặp
+            const dbRef = ref(database);
+            try {
+                const snapshot = await get(child(dbRef, `customers/${safeCustomerId}`));
+                if (snapshot.exists()) {
+                    alert('Mã khách hàng đã tồn tại. Vui lòng nhập mã khác.');
+                    return;
+                }
+            } catch (error) {
+                alert('Lỗi khi kiểm tra dữ liệu: ' + error.message);
+                return;
+            }
+
+            // Lưu dữ liệu nếu không trùng
+            set(ref(database, 'customers/' + safeCustomerId), {
+                id: safeCustomerId,
+                originalId: customerId,
+                name: customerName
+            })
+            .then(() => {
+                alert('Lưu khách hàng thành công!');
+                customerIdInput.value = '';
+                customerNameInput.value = '';
+            })
+            .catch((error) => {
+                alert('Đã xảy ra lỗi khi lưu khách hàng: ' + error.message);
+            });
+        });
+
+        const deleteCustomer = (customerIdKey) => {
+            const password = prompt('Vui lòng nhập mật khẩu để xóa:');
+            if (password === '54321') {
+                remove(ref(database, 'customers/' + customerIdKey))
+                .then(() => {
+                    alert('Đã xóa khách hàng thành công!');
+                })
+                .catch((error) => {
+                    alert('Đã xảy ra lỗi khi xóa khách hàng: ' + error.message);
+                });
+            } else {
+                alert('Mật khẩu không đúng. Vui lòng thử lại.');
+            }
+        };
+
+        deleteAllCustomersBtn.addEventListener('click', () => {
+            const password = prompt('CẢNH BÁO: Thao tác này sẽ xóa toàn bộ danh sách khách hàng. Vui lòng nhập mật khẩu để xác nhận:');
+            if (password === '54321') {
+                remove(ref(database, 'customers'))
+                .then(() => {
+                    alert('Đã xóa toàn bộ danh sách khách hàng thành công!');
+                })
+                .catch((error) => {
+                    alert('Đã xảy ra lỗi khi xóa toàn bộ danh sách: ' + error.message);
+                });
+            } else {
+                alert('Mật khẩu không đúng. Vui lòng thử lại.');
+            }
+        });
+
+        onValue(ref(database, 'customers'), (snapshot) => {
+            const data = snapshot.val();
+            customerData = [];
+            customerTableBody.innerHTML = '';
+            let index = 1;
+
+            if (data) {
+                for (const key in data) {
+                    const customer = data[key];
+                    const displayedId = customer.originalId || customer.id;
+
+                    customerData.push({
+                        'Thứ tự': index,
+                        'Mã số': displayedId,
+                        'Tên khách hàng': customer.name
+                    });
+
+                    const row = customerTableBody.insertRow();
+                    row.insertCell(0).textContent = index++;
+                    row.insertCell(1).textContent = displayedId;
+                    row.insertCell(2).textContent = customer.name;
+                    
+                    const actionsCell = row.insertCell(3);
+                    actionsCell.classList.add('action-buttons');
+
+                    const orderBtn = document.createElement('button');
+                    orderBtn.textContent = 'Lệnh XH';
+                    orderBtn.className = 'order-btn';
+                    orderBtn.addEventListener('click', () => {
+                        showOrderForm(customer.id, customer.name);
+                    });
+                    actionsCell.appendChild(orderBtn);
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Xoá';
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.addEventListener('click', () => {
+                        deleteCustomer(key);
+                    });
+                    actionsCell.appendChild(deleteBtn);
+                }
+            }
+        });
+
+        importBtn.addEventListener('click', () => { excelFile.click(); });
+        excelFile.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const importedData = XLSX.utils.sheet_to_json(worksheet);
+
+                if (importedData.length > 0) {
+                    const updates = {};
+                    importedData.forEach(row => {
+                        const originalId = row['Mã số'];
+                        const customerName = row['Tên khách hàng'];
+                        if (originalId && customerName) {
+                            const safeCustomerId = String(originalId).trim().replace(/[.#$[\]]/g, '');
+                            if (safeCustomerId) {
+                                updates['/customers/' + safeCustomerId] = {
+                                    id: safeCustomerId,
+                                    originalId: String(originalId).trim(),
+                                    name: customerName
+                                };
+                            }
+                        }
+                    });
+                    update(ref(database), updates)
+                        .then(() => { alert(`Đã nhập thành công ${Object.keys(updates).length} khách hàng từ file Excel!`); })
+                        .catch(error => { alert("Đã xảy ra lỗi khi nhập dữ liệu: " + error.message); });
+                } else {
+                    alert('File Excel không có dữ liệu hoặc cấu trúc không đúng.');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+        
+        exportBtn.addEventListener('click', () => {
+            if (customerData.length === 0) {
+                alert('Không có dữ liệu để xuất ra file Excel.');
+                return;
+            }
+            const worksheet = XLSX.utils.json_to_sheet(customerData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "DanhSachKhachHang");
+            XLSX.writeFile(workbook, "danh-sach-khach-hang.xlsx");
+        });
+
+        viewOrdersBtn.addEventListener('click', () => { showOrderList(); });
+
+        // --- Xử lý chức năng Lệnh Xuất Hàng ---
+        submitOrderBtn.addEventListener('click', () => {
+            const orderData = {
+                customerId: currentCustomerId,
+                date: orderDateInput.value,
+                warehouse: orderWarehouseInput.value,
+                transporter: orderTransporterInput.value,
+                vehicle: orderVehicleInput.value,
+                lpg45kg: Number(orderLpg45kgInput.value),
+                lpg12kg: Number(orderLpg12kgInput.value),
+                lpg11kg: Number(orderLpg11kgInput.value),
+                chai45kg: Number(order45kgInput.value),
+                chai45kgDual: Number(order45kgDualInput.value),
+                chai12kg: Number(order12kgInput.value),
+                chai11kg: Number(order11kgInput.value),
+                customerName: orderCustomerName.textContent
+            };
+            
+            // Validate data
+            if (!orderData.date || !orderData.warehouse || !orderData.transporter || !orderData.vehicle) {
+                alert("Vui lòng nhập đầy đủ thông tin bắt buộc.");
+                return;
+            }
+
+            if (currentOrderKey) {
+                // Đang ở chế độ chỉnh sửa, cập nhật lệnh
+                update(ref(database, 'orders/' + currentOrderKey), orderData)
+                .then(() => {
+                    alert('Đã cập nhật lệnh thành công!');
+                    showCustomerList(); // Quay lại danh sách khách hàng
+                })
+                .catch(error => {
+                    alert('Lỗi khi cập nhật lệnh: ' + error.message);
+                });
+            } else {
+                // Đang ở chế độ tạo mới, lưu lệnh mới
+                const newOrderRef = push(ref(database, 'orders'));
+                set(newOrderRef, orderData)
+                .then(() => {
+                    alert('Đã lưu lệnh thành công!');
+                    showCustomerList(); // Quay lại danh sách khách hàng
+                })
+                .catch(error => {
+                    alert('Lỗi khi lưu lệnh: ' + error.message);
+                });
+            }
+        });
+
+        // Xử lý nút "Xoá tất cả các lệnh"
+        deleteAllOrdersBtn.addEventListener('click', () => {
+            const password = prompt('CẢNH BÁO: Thao tác này sẽ xóa toàn bộ danh sách lệnh. Vui lòng nhập mật khẩu để xác nhận:');
+            if (password === '97531') {
+                remove(ref(database, 'orders'))
+                .then(() => {
+                    alert('Đã xóa toàn bộ danh sách lệnh thành công!');
+                })
+                .catch((error) => {
+                    alert('Đã xảy ra lỗi khi xóa toàn bộ danh sách: ' + error.message);
+                });
+            } else {
+                alert('Mật khẩu không đúng. Vui lòng thử lại.');
+            }
+        });
+
+        // Xử lý nút quay lại
+        backToCustomerListBtn.addEventListener('click', () => { showCustomerList(); });
+        backToCustomerListBtn2.addEventListener('click', () => { showCustomerList(); });
+
+        // Hàm render orders cho một trang cụ thể
+        const renderOrdersForPage = (pageNumber) => {
+            orderTableBody.innerHTML = '';
+            const totalOrders = allOrders.length;
+            const startIndex = (pageNumber - 1) * ITEMS_PER_PAGE;
+            const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalOrders);
+            const ordersToDisplay = allOrders.slice(startIndex, endIndex);
+
+            const totalPages = Math.ceil(totalOrders / ITEMS_PER_PAGE);
+            pageInfoSpan.textContent = `Trang ${pageNumber}/${totalPages || 1}`;
+            prevPageBtn.disabled = pageNumber === 1;
+            nextPageBtn.disabled = pageNumber === totalPages || totalOrders === 0;
+
+            const webAppUrl = "https://script.google.com/macros/s/AKfycbyQSlwwXP2Ez7jP4XaQdem4t4tpiB4eP2kMJWQVqFbO788RgUaUDOOEzAI8inuJ-RtE/exec";
+            const sheetsUrl = "https://docs.google.com/spreadsheets/d/1TIgp53shmETSNcK57VsQKdCXA68re_WT9VCuWmo5wUM/edit?gid=431300796#gid=431300796";
+
+            let rowIndex = startIndex;
+            ordersToDisplay.forEach(order => {
+                const row = orderTableBody.insertRow();
+                const orderNumber = totalOrders - rowIndex++;
+                
+                row.insertCell(0).textContent = orderNumber;
+                row.insertCell(1).textContent = order.customerName;
+                row.insertCell(2).textContent = order.date;
+                row.insertCell(3).textContent = order.warehouse;
+                row.insertCell(4).textContent = order.vehicle;
+                row.insertCell(5).textContent = order.lpg45kg;
+                row.insertCell(6).textContent = order.lpg12kg;
+                row.insertCell(7).textContent = order.lpg11kg;
+                row.insertCell(8).textContent = order.chai45kg;
+                row.insertCell(9).textContent = order.chai45kgDual;
+                row.insertCell(10).textContent = order.chai12kg;
+                row.insertCell(11).textContent = order.chai11kg;
+                
+                const actionsCell = row.insertCell(12);
+                actionsCell.classList.add('action-buttons');
+
+                const editBtn = document.createElement('button');
+                editBtn.textContent = 'Sửa lệnh';
+                editBtn.className = 'edit-btn';
+                editBtn.addEventListener('click', () => {
+                    const password = prompt('Vui lòng nhập mật khẩu để sửa lệnh:');
+                    if (password === '00000') {
+                        showEditOrderForm(order.key, order);
+                    } else {
+                        alert('Mật khẩu không đúng. Vui lòng thử lại.');
+                    }
+                });
+                actionsCell.appendChild(editBtn);
+                
+                const printBtn = document.createElement('button');
+                printBtn.textContent = 'In lệnh';
+                printBtn.className = 'print-btn';
+                printBtn.addEventListener('click', () => {
+                    const orderDataForSheets = {
+                        orderNumber: orderNumber,
+                        customerName: order.customerName,
+                        date: order.date,
+                        warehouse: order.warehouse,
+                        transporter: order.transporter,
+                        vehicle: order.vehicle,
+                        lpg45kg: order.lpg45kg,
+                        lpg12kg: order.lpg12kg,
+                        lpg11kg: order.lpg11kg,
+                        chai45kg: order.chai45kg,
+                        chai45kgDual: order.chai45kgDual,
+                        chai12kg: order.chai12kg,
+                        chai11kg: order.chai11kg
+                    };
+
+                    fetch(webAppUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'text/plain',
+                        },
+                        body: JSON.stringify(orderDataForSheets)
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Lỗi HTTP: ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(data => {
+                        alert('Đã gửi dữ liệu thành công! Phản hồi từ server: ' + data);
+                    })
+                    .catch(error => {
+                        alert('Lỗi khi gửi dữ liệu: ' + error);
+                    });
+                    
+                    setTimeout(() => {
+                        window.open(sheetsUrl, '_blank');
+                    }, 5000);
+                });
+                actionsCell.appendChild(printBtn);
+            });
+        };
+
+        // Lắng nghe dữ liệu lệnh xuất hàng
+        onValue(ref(database, 'orders'), (snapshot) => {
+            const data = snapshot.val();
+            allOrders = [];
+
+            if (data) {
+                const sortedKeys = Object.keys(data).sort((a, b) => {
+                    const timeA = parseInt(a.substring(1));
+                    const timeB = parseInt(b.substring(1));
+                    return timeB - timeA;
+                });
+                
+                sortedKeys.forEach(key => {
+                    allOrders.push({...data[key], key: key}); // Lưu cả key vào đối tượng
+                });
+            }
+
+            currentPage = 1;
+            renderOrdersForPage(currentPage);
+        });
+
+        // Xử lý sự kiện nút phân trang
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderOrdersForPage(currentPage);
+            }
+        });
+
+        nextPageBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(allOrders.length / ITEMS_PER_PAGE);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderOrdersForPage(currentPage);
+            }
+        });
+    </script>
+</body>
+</html>
