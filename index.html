@@ -727,9 +727,9 @@
             const sheetsUrl = "https://docs.google.com/spreadsheets/d/1TIgp53shmETSNcK57VsQKdCXA68re_WT9VCuWmo5wUM/edit?gid=431300796#gid=431300796";
 
             let rowIndex = startIndex;
-            ordersToDisplay.forEach(order => {
+            ordersToDisplay.forEach((order, index) => {
                 const row = orderTableBody.insertRow();
-                const orderNumber = totalOrders - rowIndex++;
+                const orderNumber = startIndex + index + 1; // Sửa lại cách tính số thứ tự
                 
                 row.insertCell(0).textContent = orderNumber;
                 row.insertCell(1).textContent = order.customerName;
@@ -817,7 +817,7 @@
                 const sortedKeys = Object.keys(data).sort((a, b) => {
                     const timeA = parseInt(a.substring(1));
                     const timeB = parseInt(b.substring(1));
-                    return timeB - timeA;
+                    return timeA - timeB; // Thay đổi sắp xếp để thứ tự tăng dần
                 });
                 
                 sortedKeys.forEach(key => {
@@ -825,7 +825,8 @@
                 });
             }
 
-            currentPage = 1;
+            const totalPages = Math.ceil(allOrders.length / ITEMS_PER_PAGE);
+            currentPage = totalPages > 0 ? totalPages : 1; // Tự động chuyển đến trang cuối
             renderOrdersForPage(currentPage);
         });
 
