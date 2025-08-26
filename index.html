@@ -105,6 +105,12 @@
             font-size: 14px;
         }
 
+        button.statistics-btn {
+            background-color: #9b59b6;
+            padding: 10px 15px;
+            font-size: 16px;
+        }
+
         button.delete-btn:hover, button.delete-all-btn:hover {
             background-color: #c0392b;
         }
@@ -119,6 +125,10 @@
 
         button.edit-btn:hover {
             background-color: #2980b9;
+        }
+        
+        button.statistics-btn:hover {
+            background-color: #8e44ad;
         }
 
         button:hover {
@@ -136,6 +146,31 @@
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+        }
+        
+        .statistics-section {
+            background-color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .statistics-section .form-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .statistics-section .form-group label {
+            min-width: 150px;
+        }
+
+        .statistics-section .form-group input {
+            flex-grow: 1;
         }
 
         table {
@@ -198,7 +233,7 @@
 
         <div id="customer-view">
             <section class="input-section">
-                <h2>Nhập thông tin khách hàng</h2>
+                <h2>Thêm khách hàng vào dữ liệu</h2>
                 <div class="form-group">
                     <label for="customerId">Mã số khách hàng:</label>
                     <input type="text" id="customerId" placeholder="Mã số">
@@ -296,6 +331,7 @@
                     <div class="list-header-buttons">
                         <button id="deleteAllOrdersBtn" class="delete-all-btn">Xoá tất cả các lệnh</button>
                         <button id="backToCustomerListBtn2">Quay lại</button>
+                        <button id="showStatisticsBtn" class="statistics-btn">Xuất DS lệnh</button>
                     </div>
                 </div>
                 
@@ -400,6 +436,8 @@
         const orderTableBody = document.querySelector('#orderTable tbody');
         const backToCustomerListBtn2 = document.getElementById('backToCustomerListBtn2');
         const deleteAllOrdersBtn = document.getElementById('deleteAllOrdersBtn');
+        const showStatisticsBtn = document.getElementById('showStatisticsBtn');
+
         const prevPageBtn = document.getElementById('prevPageBtn');
         const nextPageBtn = document.getElementById('nextPageBtn');
         const pageInfoSpan = document.getElementById('pageInfo');
@@ -726,7 +764,6 @@
             const webAppUrl = "https://script.google.com/macros/s/AKfycbyQSlwwXP2Ez7jP4XaQdem4t4tpiB4eP2kMJWQVqFbO788RgUaUDOOEzAI8inuJ-RtE/exec";
             const sheetsUrl = "https://docs.google.com/spreadsheets/d/1TIgp53shmETSNcK57VsQKdCXA68re_WT9VCuWmo5wUM/edit?gid=431300796#gid=431300796";
 
-            let rowIndex = startIndex;
             ordersToDisplay.forEach((order, index) => {
                 const row = orderTableBody.insertRow();
                 const orderNumber = startIndex + index + 1; // Sửa lại cách tính số thứ tự
@@ -820,8 +857,8 @@
                     return timeA - timeB; // Thay đổi sắp xếp để thứ tự tăng dần
                 });
                 
-                sortedKeys.forEach(key => {
-                    allOrders.push({...data[key], key: key}); // Lưu cả key vào đối tượng
+                sortedKeys.forEach((key, index) => {
+                    allOrders.push({...data[key], key: key, orderNumber: index + 1}); // Lưu cả key và số thứ tự vào đối tượng
                 });
             }
 
@@ -844,6 +881,35 @@
                 currentPage++;
                 renderOrdersForPage(currentPage);
             }
+        });
+
+        // --- Chức năng Thống kê ---
+        showStatisticsBtn.addEventListener('click', () => {
+            if (allOrders.length === 0) {
+                alert('Không có dữ liệu để xuất file Excel.');
+                return;
+            }
+
+            const processedData = allOrders.map(order => ({
+                'Số thứ tự': order.orderNumber,
+                'Tên Khách hàng': order.customerName,
+                'Ngày tháng': order.date,
+                'Kho xuất': order.warehouse,
+                'Người vận chuyển': order.transporter,
+                'Số xe': order.vehicle,
+                'LPG 45 kg': order.lpg45kg,
+                'LPG 12 kg': order.lpg12kg,
+                'LPG 11 kg': order.lpg11kg,
+                'Chai 45 kg': order.chai45kg,
+                '45 kg van kép': order.chai45kgDual,
+                'Chai 12 kg': order.chai12kg,
+                'Chai 11 kg': order.chai11kg
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(processedData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "ThongKeLenh");
+            XLSX.writeFile(workbook, "thong-ke-toan-bo-lenh.xlsx");
         });
     </script>
 </body>
