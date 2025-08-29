@@ -21,7 +21,7 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            display: none; /* Ẩn toàn bộ nội dung ban đầu */
+            display: none;
         }
 
         header {
@@ -221,6 +221,23 @@
             padding: 8px 12px;
             font-size: 14px;
         }
+        
+        /* CSS MỚI CHO GIAO DIỆN TẠO LỆNH */
+        .order-form-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .order-form-container .form-group label {
+            width: 150px; /* Cố định chiều rộng của label */
+            display: inline-block;
+        }
+
+        .order-form-container .form-group input {
+            width: calc(100% - 160px); /* Tùy chỉnh chiều rộng input để phù hợp */
+        }
+        /* END CSS MỚI */
     </style>
 </head>
 <body>
@@ -274,53 +291,61 @@
 
         <div id="order-form-view" class="hidden">
             <section class="input-section">
-                <h2>Tạo Lệnh Xuất Hàng cho khách hàng: <span id="orderCustomerName" style="color: blue;"></span></h2>
-                <div class="form-group">
-                    <label for="orderDate">Ngày tháng:</label>
-                    <input type="text" id="orderDate" placeholder="dd/mm/yyyy" value="">
+                <h2 style="color: #3498db; margin-bottom: 20px;">Tạo Lệnh Xuất Hàng cho khách hàng: <span id="orderCustomerName" style="color: blue;"></span></h2>
+                <div class="order-form-container">
+                    <div class="left-column">
+                        <div class="form-group">
+                            <label for="orderDate">Ngày tháng:</label>
+                            <input type="text" id="orderDate" placeholder="dd/mm/yyyy" value="">
+                        </div>
+                        <div class="form-group">
+                            <label for="orderWarehouse">Kho xuất:</label>
+                            <input type="text" id="orderWarehouse">
+                        </div>
+                        <div class="form-group">
+                            <label for="orderTransporter">Người vận chuyển:</label>
+                            <input type="text" id="orderTransporter">
+                        </div>
+                        <div class="form-group">
+                            <label for="orderVehicle">Số xe:</label>
+                            <input type="text" id="orderVehicle">
+                        </div>
+                    </div>
+                    <div class="right-column">
+                        <div class="form-group">
+                            <label for="orderLpg45kg">LPG chai 45 kg:</label>
+                            <input type="number" id="orderLpg45kg" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="orderLpg12kg">LPG chai 12 kg:</label>
+                            <input type="number" id="orderLpg12kg" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="orderLpg11kg">LPG chai 11 kg:</label>
+                            <input type="number" id="orderLpg11kg" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="order45kg">Chai 45 kg:</label>
+                            <input type="number" id="order45kg" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="order45kgDual">Chai 45 kg van kép:</label>
+                            <input type="number" id="order45kgDual" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="order12kg">Chai 12 kg:</label>
+                            <input type="number" id="order12kg" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="order11kg">Chai 11 kg:</label>
+                            <input type="number" id="order11kg" value="0">
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="orderWarehouse">Kho xuất:</label>
-                    <input type="text" id="orderWarehouse">
+                <div style="margin-top: 20px; text-align: center;">
+                    <button id="submitOrderBtn">Lưu lệnh</button>
+                    <button id="backToCustomerListBtn">Quay lại</button>
                 </div>
-                <div class="form-group">
-                    <label for="orderTransporter">Người vận chuyển:</label>
-                    <input type="text" id="orderTransporter">
-                </div>
-                <div class="form-group">
-                    <label for="orderVehicle">Số xe:</label>
-                    <input type="text" id="orderVehicle">
-                </div>
-                <div class="form-group">
-                    <label for="orderLpg45kg">LPG chai 45 kg:</label>
-                    <input type="number" id="orderLpg45kg" value="0">
-                </div>
-                <div class="form-group">
-                    <label for="orderLpg12kg">LPG chai 12 kg:</label>
-                    <input type="number" id="orderLpg12kg" value="0">
-                </div>
-                <div class="form-group">
-                    <label for="orderLpg11kg">LPG chai 11 kg:</label>
-                    <input type="number" id="orderLpg11kg" value="0">
-                </div>
-                <div class="form-group">
-                    <label for="order45kg">Chai 45 kg:</label>
-                    <input type="number" id="order45kg" value="0">
-                </div>
-                <div class="form-group">
-                    <label for="order45kgDual">Chai 45 kg van kép:</label>
-                    <input type="number" id="order45kgDual" value="0">
-                </div>
-                <div class="form-group">
-                    <label for="order12kg">Chai 12 kg:</label>
-                    <input type="number" id="order12kg" value="0">
-                </div>
-                <div class="form-group">
-                    <label for="order11kg">Chai 11 kg:</label>
-                    <input type="number" id="order11kg" value="0">
-                </div>
-                <button id="submitOrderBtn">Lưu lệnh</button>
-                <button id="backToCustomerListBtn">Quay lại</button>
             </section>
         </div>
 
@@ -370,24 +395,21 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, update, remove, push, get, child } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
         
-        // --- CHỨC NĂNG YÊU CẦU MẬT KHẨU ---
         const correctPassword = "mydinh";
         const mainContent = document.getElementById('main-content');
         
         function askForPassword() {
             let password = prompt("Vui lòng nhập mật khẩu để truy cập:");
             if (password === correctPassword) {
-                mainContent.style.display = 'block'; // Hiển thị nội dung
+                mainContent.style.display = 'block';
             } else {
                 alert("Mật khẩu không đúng. Vui lòng thử lại.");
-                askForPassword(); // Yêu cầu nhập lại
+                askForPassword();
             }
         }
         
         window.onload = askForPassword;
-        // --- KẾT THÚC CHỨC NĂNG YÊU CẦU MẬT KHẨU ---
 
-        // Cấu hình Firebase của bạn
         const firebaseConfig = {
           apiKey: "AIzaSyBy1H9xX0qwnjpEQngFKpMq56L6VvMWqAI",
           authDomain: "cnmb-ce04d.firebaseapp.com",
@@ -402,7 +424,6 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        // Lấy các phần tử DOM cho phần khách hàng
         const customerView = document.getElementById('customer-view');
         const customerIdInput = document.getElementById('customerId');
         const customerNameInput = document.getElementById('customerName');
@@ -414,7 +435,6 @@
         const customerTableBody = document.querySelector('#customerTable tbody');
         const viewOrdersBtn = document.getElementById('viewOrdersBtn');
 
-        // Lấy các phần tử DOM cho form tạo lệnh
         const orderFormView = document.getElementById('order-form-view');
         const orderCustomerName = document.getElementById('orderCustomerName');
         const orderDateInput = document.getElementById('orderDate');
@@ -431,7 +451,6 @@
         const submitOrderBtn = document.getElementById('submitOrderBtn');
         const backToCustomerListBtn = document.getElementById('backToCustomerListBtn');
 
-        // Lấy các phần tử DOM cho danh sách lệnh
         const orderListView = document.getElementById('order-list-view');
         const orderTableBody = document.querySelector('#orderTable tbody');
         const backToCustomerListBtn2 = document.getElementById('backToCustomerListBtn2');
@@ -442,16 +461,14 @@
         const nextPageBtn = document.getElementById('nextPageBtn');
         const pageInfoSpan = document.getElementById('pageInfo');
 
-        // Cấu hình phân trang
         const ITEMS_PER_PAGE = 50;
         let currentPage = 1;
         let allOrders = [];
 
         let customerData = [];
         let currentCustomerId = '';
-        let currentOrderKey = null; // Biến mới để lưu key của lệnh đang được chỉnh sửa
+        let currentOrderKey = null;
 
-        // Hàm ẩn/hiện các phần
         const showCustomerList = () => {
             customerView.classList.remove('hidden');
             orderFormView.classList.add('hidden');
@@ -480,7 +497,6 @@
             orderListView.classList.add('hidden');
         };
 
-        // Hàm mới để hiển thị form chỉnh sửa lệnh
         const showEditOrderForm = (orderKey, order) => {
             currentOrderKey = orderKey;
             orderCustomerName.textContent = order.customerName;
@@ -509,7 +525,6 @@
             orderListView.classList.remove('hidden');
         };
 
-        // --- Xử lý chức năng khách hàng ---
         saveBtn.addEventListener('click', async () => {
             const customerId = customerIdInput.value.trim();
             const customerName = customerNameInput.value.trim();
@@ -526,7 +541,6 @@
                 return;
             }
 
-            // Kiểm tra trùng lặp
             const dbRef = ref(database);
             try {
                 const snapshot = await get(child(dbRef, `customers/${safeCustomerId}`));
@@ -539,7 +553,6 @@
                 return;
             }
 
-            // Lưu dữ liệu nếu không trùng
             set(ref(database, 'customers/' + safeCustomerId), {
                 id: safeCustomerId,
                 originalId: customerId,
@@ -680,7 +693,6 @@
 
         viewOrdersBtn.addEventListener('click', () => { showOrderList(); });
 
-        // --- Xử lý chức năng Lệnh Xuất Hàng ---
         submitOrderBtn.addEventListener('click', () => {
             const orderData = {
                 customerId: currentCustomerId,
@@ -698,29 +710,26 @@
                 customerName: orderCustomerName.textContent
             };
             
-            // Validate data
             if (!orderData.date || !orderData.warehouse || !orderData.transporter || !orderData.vehicle) {
                 alert("Vui lòng nhập đầy đủ thông tin bắt buộc.");
                 return;
             }
 
             if (currentOrderKey) {
-                // Đang ở chế độ chỉnh sửa, cập nhật lệnh
                 update(ref(database, 'orders/' + currentOrderKey), orderData)
                 .then(() => {
                     alert('Đã cập nhật lệnh thành công!');
-                    showCustomerList(); // Quay lại danh sách khách hàng
+                    showCustomerList();
                 })
                 .catch(error => {
                     alert('Lỗi khi cập nhật lệnh: ' + error.message);
                 });
             } else {
-                // Đang ở chế độ tạo mới, lưu lệnh mới
                 const newOrderRef = push(ref(database, 'orders'));
                 set(newOrderRef, orderData)
                 .then(() => {
                     alert('Đã lưu lệnh thành công!');
-                    showCustomerList(); // Quay lại danh sách khách hàng
+                    showCustomerList();
                 })
                 .catch(error => {
                     alert('Lỗi khi lưu lệnh: ' + error.message);
@@ -728,7 +737,6 @@
             }
         });
 
-        // Xử lý nút "Xoá tất cả các lệnh"
         deleteAllOrdersBtn.addEventListener('click', () => {
             const password = prompt('CẢNH BÁO: Thao tác này sẽ xóa toàn bộ danh sách lệnh. Vui lòng nhập mật khẩu để xác nhận:');
             if (password === '97531') {
@@ -744,11 +752,9 @@
             }
         });
 
-        // Xử lý nút quay lại
         backToCustomerListBtn.addEventListener('click', () => { showCustomerList(); });
         backToCustomerListBtn2.addEventListener('click', () => { showCustomerList(); });
 
-        // Hàm render orders cho một trang cụ thể
         const renderOrdersForPage = (pageNumber) => {
             orderTableBody.innerHTML = '';
             const totalOrders = allOrders.length;
@@ -761,12 +767,12 @@
             prevPageBtn.disabled = pageNumber === 1;
             nextPageBtn.disabled = pageNumber === totalPages || totalOrders === 0;
 
-            const webAppUrl = "https://script.google.com/macros/s/AKfycbyQSlwwXP2Ez7jP4XaQdem4t4tpiB4eP2kMJWQVqFbO788RgUaUDOOEzAI8inuJ-RtE/exec";
+            const webAppUrl = "https://script.google.com/macros/s/AKfycbx-zb6rJ5-CCgiIk0-hlzvMUOcy2QRf0MzaQzfMvb99dZ-knVK9uaAhXalhoI3zKXE4/exec";
             const sheetsUrl = "https://docs.google.com/spreadsheets/d/1TIgp53shmETSNcK57VsQKdCXA68re_WT9VCuWmo5wUM/edit?gid=431300796#gid=431300796";
 
             ordersToDisplay.forEach((order, index) => {
                 const row = orderTableBody.insertRow();
-                const orderNumber = startIndex + index + 1; // Sửa lại cách tính số thứ tự
+                const orderNumber = startIndex + index + 1;
                 
                 row.insertCell(0).textContent = orderNumber;
                 row.insertCell(1).textContent = order.customerName;
@@ -845,7 +851,6 @@
             });
         };
 
-        // Lắng nghe dữ liệu lệnh xuất hàng
         onValue(ref(database, 'orders'), (snapshot) => {
             const data = snapshot.val();
             allOrders = [];
@@ -854,20 +859,19 @@
                 const sortedKeys = Object.keys(data).sort((a, b) => {
                     const timeA = parseInt(a.substring(1));
                     const timeB = parseInt(b.substring(1));
-                    return timeA - timeB; // Thay đổi sắp xếp để thứ tự tăng dần
+                    return timeA - timeB;
                 });
                 
                 sortedKeys.forEach((key, index) => {
-                    allOrders.push({...data[key], key: key, orderNumber: index + 1}); // Lưu cả key và số thứ tự vào đối tượng
+                    allOrders.push({...data[key], key: key, orderNumber: index + 1});
                 });
             }
 
             const totalPages = Math.ceil(allOrders.length / ITEMS_PER_PAGE);
-            currentPage = totalPages > 0 ? totalPages : 1; // Tự động chuyển đến trang cuối
+            currentPage = totalPages > 0 ? totalPages : 1;
             renderOrdersForPage(currentPage);
         });
 
-        // Xử lý sự kiện nút phân trang
         prevPageBtn.addEventListener('click', () => {
             if (currentPage > 1) {
                 currentPage--;
@@ -883,7 +887,6 @@
             }
         });
 
-        // --- Chức năng Thống kê ---
         showStatisticsBtn.addEventListener('click', () => {
             if (allOrders.length === 0) {
                 alert('Không có dữ liệu để xuất file Excel.');
