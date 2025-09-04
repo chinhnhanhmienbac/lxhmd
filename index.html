@@ -110,6 +110,12 @@
             padding: 10px 15px;
             font-size: 16px;
         }
+        
+        button.import-orders-btn {
+            background-color: #2c3e50;
+            padding: 10px 15px;
+            font-size: 16px;
+        }
 
         button.delete-btn:hover, button.delete-all-btn:hover {
             background-color: #c0392b;
@@ -130,6 +136,11 @@
         button.statistics-btn:hover {
             background-color: #8e44ad;
         }
+        
+        button.import-orders-btn:hover {
+            background-color: #1e252e;
+        }
+
 
         button:hover {
             background-color: #2980b9;
@@ -222,7 +233,6 @@
             font-size: 14px;
         }
         
-        /* CSS MỚI CHO GIAO DIỆN TẠO LỆNH */
         .order-form-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -230,14 +240,13 @@
         }
 
         .order-form-container .form-group label {
-            width: 150px; /* Cố định chiều rộng của label */
+            width: 150px;
             display: inline-block;
         }
 
         .order-form-container .form-group input {
-            width: calc(100% - 160px); /* Tùy chỉnh chiều rộng input để phù hợp */
+            width: calc(100% - 160px);
         }
-        /* END CSS MỚI */
     </style>
 </head>
 <body>
@@ -317,6 +326,10 @@
                             <input type="number" id="orderLpg45kg" value="0">
                         </div>
                         <div class="form-group">
+                            <label for="orderL45dual">LPG chai 45 van kép:</label>
+                            <input type="number" id="orderL45dual" value="0">
+                        </div>
+                        <div class="form-group">
                             <label for="orderLpg12kg">LPG chai 12 kg:</label>
                             <input type="number" id="orderLpg12kg" value="0">
                         </div>
@@ -329,8 +342,8 @@
                             <input type="number" id="order45kg" value="0">
                         </div>
                         <div class="form-group">
-                            <label for="order45kgDual">Chai 45 kg van kép:</label>
-                            <input type="number" id="order45kgDual" value="0">
+                            <label for="orderch45Dual">Chai 45 kg van kép:</label>
+                            <input type="number" id="orderch45Dual" value="0">
                         </div>
                         <div class="form-group">
                             <label for="order12kg">Chai 12 kg:</label>
@@ -354,6 +367,8 @@
                 <div class="list-header">
                     <h2>Danh sách các Lệnh Xuất Hàng</h2>
                     <div class="list-header-buttons">
+                        <button id="importOrdersBtn" class="import-orders-btn">Nhập danh sách lệnh</button>
+                        <input type="file" id="excelOrderFile" accept=".xlsx, .xls" style="display:none;">
                         <button id="showStatisticsBtn" class="statistics-btn">Xuất DS lệnh</button>
                         <button id="deleteAllOrdersBtn" class="delete-all-btn">Xoá tất cả các lệnh</button>
                         <button id="backToCustomerListBtn2">Quay lại</button>
@@ -369,6 +384,7 @@
                             <th>Kho xuất</th>
                             <th>Số xe</th>
                             <th>LPG 45 kg</th>
+                            <th>LPG 45 kép</th>
                             <th>LPG 12 kg</th>
                             <th>LPG 11 kg</th>
                             <th>Chai 45 kg</th>
@@ -393,7 +409,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, update, remove, push, get, child } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { 
+            getFirestore, collection, doc, setDoc, getDoc, onSnapshot, 
+            updateDoc, deleteDoc, addDoc, getDocs, query, orderBy, serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
         
         const correctPassword = "mydinh";
         const mainContent = document.getElementById('main-content');
@@ -410,19 +429,20 @@
         
         window.onload = askForPassword;
 
+        // ===== START: NEW FIREBASE CONFIG =====
         const firebaseConfig = {
-          apiKey: "AIzaSyBy1H9xX0qwnjpEQngFKpMq56L6VvMWqAI",
-          authDomain: "cnmb-ce04d.firebaseapp.com",
-          databaseURL: "https://cnmb-ce04d-default-rtdb.asia-southeast1.firebasedatabase.app",
-          projectId: "cnmb-ce04d",
-          storageBucket: "cnmb-ce04d.firebasestorage.app",
-          messagingSenderId: "854586394737",
-          appId: "1:854586394737:web:ed6ead38961bf534da73d0",
-          measurementId: "G-G7RXWLVV7V"
+          apiKey: "AIzaSyDg9EEQoXle1Sraw5RbZQ7FEDL5c0MChbI",
+          authDomain: "chinhanhmienbac-76730.firebaseapp.com",
+          projectId: "chinhanhmienbac-76730",
+          storageBucket: "chinhanhmienbac-76730.firebasestorage.app",
+          messagingSenderId: "562846259410",
+          appId: "1:562846259410:web:71101f799bdadf5ad5b50b",
+          measurementId: "G-3WJMVDMJLE"
         };
+        // ===== END: NEW FIREBASE CONFIG =====
 
         const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+        const db = getFirestore(app);
 
         const customerView = document.getElementById('customer-view');
         const customerIdInput = document.getElementById('customerId');
@@ -442,10 +462,11 @@
         const orderTransporterInput = document.getElementById('orderTransporter');
         const orderVehicleInput = document.getElementById('orderVehicle');
         const orderLpg45kgInput = document.getElementById('orderLpg45kg');
+        const orderL45dualInput = document.getElementById('orderL45dual');
         const orderLpg12kgInput = document.getElementById('orderLpg12kg');
         const orderLpg11kgInput = document.getElementById('orderLpg11kg');
         const order45kgInput = document.getElementById('order45kg');
-        const order45kgDualInput = document.getElementById('order45kgDual');
+        const orderch45DualInput = document.getElementById('orderch45Dual');
         const order12kgInput = document.getElementById('order12kg');
         const order11kgInput = document.getElementById('order11kg');
         const submitOrderBtn = document.getElementById('submitOrderBtn');
@@ -456,6 +477,8 @@
         const backToCustomerListBtn2 = document.getElementById('backToCustomerListBtn2');
         const deleteAllOrdersBtn = document.getElementById('deleteAllOrdersBtn');
         const showStatisticsBtn = document.getElementById('showStatisticsBtn');
+        const importOrdersBtn = document.getElementById('importOrdersBtn');
+        const excelOrderFile = document.getElementById('excelOrderFile');
 
         const prevPageBtn = document.getElementById('prevPageBtn');
         const nextPageBtn = document.getElementById('nextPageBtn');
@@ -481,22 +504,25 @@
             currentCustomerId = customerId;
             orderCustomerName.textContent = customerName;
             orderDateInput.value = new Date().toLocaleDateString('vi-VN');
-            orderWarehouseInput.value = '';
+            orderWarehouseInput.value = 'KHO MỸ ĐÌNH';
             orderTransporterInput.value = '';
             orderVehicleInput.value = '';
             orderLpg45kgInput.value = '0';
+            orderL45dualInput.value = '0';
             orderLpg12kgInput.value = '0';
             orderLpg11kgInput.value = '0';
             order45kgInput.value = '0';
-            order45kgDualInput.value = '0';
+            orderch45DualInput.value = '0';
             order12kgInput.value = '0';
             order11kgInput.value = '0';
+            
+            setupOrderInputFields();
 
             customerView.classList.add('hidden');
             orderFormView.classList.remove('hidden');
             orderListView.classList.add('hidden');
         };
-
+        
         const showEditOrderForm = (orderKey, order) => {
             currentOrderKey = orderKey;
             orderCustomerName.textContent = order.customerName;
@@ -505,14 +531,17 @@
             orderTransporterInput.value = order.transporter;
             orderVehicleInput.value = order.vehicle;
             orderLpg45kgInput.value = order.lpg45kg;
+            orderL45dualInput.value = order.L45dual;
             orderLpg12kgInput.value = order.lpg12kg;
             orderLpg11kgInput.value = order.lpg11kg;
             order45kgInput.value = order.chai45kg;
-            order45kgDualInput.value = order.chai45kgDual;
+            orderch45DualInput.value = order.ch45Dual;
             order12kgInput.value = order.chai12kg;
             order11kgInput.value = order.chai11kg;
             
             submitOrderBtn.textContent = 'Cập nhật lệnh';
+            
+            setupOrderInputFields();
 
             customerView.classList.add('hidden');
             orderFormView.classList.remove('hidden');
@@ -535,16 +564,15 @@
             }
 
             const safeCustomerId = customerId.replace(/[.#$[\]]/g, '');
-
             if (safeCustomerId === '') {
                 alert('Mã số khách hàng không hợp lệ. Vui lòng không sử dụng các ký tự đặc biệt như ., #, $, [, ].');
                 return;
             }
-
-            const dbRef = ref(database);
+            
+            const customerDocRef = doc(db, 'customers', safeCustomerId);
             try {
-                const snapshot = await get(child(dbRef, `customers/${safeCustomerId}`));
-                if (snapshot.exists()) {
+                const docSnap = await getDoc(customerDocRef);
+                if (docSnap.exists()) {
                     alert('Mã khách hàng đã tồn tại. Vui lòng nhập mã khác.');
                     return;
                 }
@@ -553,7 +581,7 @@
                 return;
             }
 
-            set(ref(database, 'customers/' + safeCustomerId), {
+            setDoc(customerDocRef, {
                 id: safeCustomerId,
                 originalId: customerId,
                 name: customerName
@@ -567,11 +595,11 @@
                 alert('Đã xảy ra lỗi khi lưu khách hàng: ' + error.message);
             });
         });
-
+        
         const deleteCustomer = (customerIdKey) => {
             const password = prompt('Vui lòng nhập mật khẩu để xóa:');
             if (password === '54321') {
-                remove(ref(database, 'customers/' + customerIdKey))
+                deleteDoc(doc(db, 'customers', customerIdKey))
                 .then(() => {
                     alert('Đã xóa khách hàng thành công!');
                 })
@@ -583,63 +611,81 @@
             }
         };
 
-        deleteAllCustomersBtn.addEventListener('click', () => {
+        async function deleteCollection(collectionName) {
+            try {
+                const collectionRef = collection(db, collectionName);
+                const querySnapshot = await getDocs(collectionRef);
+                const deletePromises = [];
+                querySnapshot.forEach((doc) => {
+                    deletePromises.push(deleteDoc(doc.ref));
+                });
+                await Promise.all(deletePromises);
+                return true;
+            } catch (error) {
+                console.error(`Lỗi khi xóa collection ${collectionName}:`, error);
+                alert(`Đã xảy ra lỗi khi xóa toàn bộ danh sách: ${error.message}`);
+                return false;
+            }
+        }
+
+        deleteAllCustomersBtn.addEventListener('click', async () => {
             const password = prompt('CẢNH BÁO: Thao tác này sẽ xóa toàn bộ danh sách khách hàng. Vui lòng nhập mật khẩu để xác nhận:');
             if (password === '54321') {
-                remove(ref(database, 'customers'))
-                .then(() => {
+                const success = await deleteCollection('customers');
+                if (success) {
                     alert('Đã xóa toàn bộ danh sách khách hàng thành công!');
-                })
-                .catch((error) => {
-                    alert('Đã xảy ra lỗi khi xóa toàn bộ danh sách: ' + error.message);
-                });
+                }
             } else {
                 alert('Mật khẩu không đúng. Vui lòng thử lại.');
             }
         });
 
-        onValue(ref(database, 'customers'), (snapshot) => {
-            const data = snapshot.val();
+        const customersCollectionRef = query(collection(db, 'customers'), orderBy('originalId'));
+        onSnapshot(customersCollectionRef, (querySnapshot) => {
             customerData = [];
             customerTableBody.innerHTML = '';
             let index = 1;
 
-            if (data) {
-                for (const key in data) {
-                    const customer = data[key];
-                    const displayedId = customer.originalId || customer.id;
+            const customers = [];
+            querySnapshot.forEach((doc) => {
+                customers.push({ key: doc.id, ...doc.data() });
+            });
+            
+            // Re-sort in memory just in case, though Firestore query should handle it
+            customers.sort((a, b) => (a.originalId || a.id).localeCompare(b.originalId || b.id));
 
-                    customerData.push({
-                        'Thứ tự': index,
-                        'Mã số': displayedId,
-                        'Tên khách hàng': customer.name
-                    });
+            customers.forEach((customer) => {
+                const displayedId = customer.originalId || customer.id;
+                customerData.push({
+                    'Thứ tự': index,
+                    'Mã số': displayedId,
+                    'Tên khách hàng': customer.name
+                });
 
-                    const row = customerTableBody.insertRow();
-                    row.insertCell(0).textContent = index++;
-                    row.insertCell(1).textContent = displayedId;
-                    row.insertCell(2).textContent = customer.name;
-                    
-                    const actionsCell = row.insertCell(3);
-                    actionsCell.classList.add('action-buttons');
+                const row = customerTableBody.insertRow();
+                row.insertCell(0).textContent = index++;
+                row.insertCell(1).textContent = displayedId;
+                row.insertCell(2).textContent = customer.name;
+                
+                const actionsCell = row.insertCell(3);
+                actionsCell.classList.add('action-buttons');
 
-                    const orderBtn = document.createElement('button');
-                    orderBtn.textContent = 'Lệnh XH';
-                    orderBtn.className = 'order-btn';
-                    orderBtn.addEventListener('click', () => {
-                        showOrderForm(customer.id, customer.name);
-                    });
-                    actionsCell.appendChild(orderBtn);
+                const orderBtn = document.createElement('button');
+                orderBtn.textContent = 'Lệnh XH';
+                orderBtn.className = 'order-btn';
+                orderBtn.addEventListener('click', () => {
+                    showOrderForm(customer.id, customer.name);
+                });
+                actionsCell.appendChild(orderBtn);
 
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.textContent = 'Xoá';
-                    deleteBtn.className = 'delete-btn';
-                    deleteBtn.addEventListener('click', () => {
-                        deleteCustomer(key);
-                    });
-                    actionsCell.appendChild(deleteBtn);
-                }
-            }
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Xoá';
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.addEventListener('click', () => {
+                    deleteCustomer(customer.key);
+                });
+                actionsCell.appendChild(deleteBtn);
+            });
         });
 
         importBtn.addEventListener('click', () => { excelFile.click(); });
@@ -655,23 +701,26 @@
                 const importedData = XLSX.utils.sheet_to_json(worksheet);
 
                 if (importedData.length > 0) {
-                    const updates = {};
+                    const importPromises = [];
                     importedData.forEach(row => {
                         const originalId = row['Mã số'];
                         const customerName = row['Tên khách hàng'];
                         if (originalId && customerName) {
                             const safeCustomerId = String(originalId).trim().replace(/[.#$[\]]/g, '');
                             if (safeCustomerId) {
-                                updates['/customers/' + safeCustomerId] = {
+                                const customerDocRef = doc(db, 'customers', safeCustomerId);
+                                const customerPayload = {
                                     id: safeCustomerId,
                                     originalId: String(originalId).trim(),
                                     name: customerName
                                 };
+                                importPromises.push(setDoc(customerDocRef, customerPayload));
                             }
                         }
                     });
-                    update(ref(database), updates)
-                        .then(() => { alert(`Đã nhập thành công ${Object.keys(updates).length} khách hàng từ file Excel!`); })
+
+                    Promise.all(importPromises)
+                        .then(() => { alert(`Đã nhập thành công ${importPromises.length} khách hàng từ file Excel!`); })
                         .catch(error => { alert("Đã xảy ra lỗi khi nhập dữ liệu: " + error.message); });
                 } else {
                     alert('File Excel không có dữ liệu hoặc cấu trúc không đúng.');
@@ -700,23 +749,27 @@
                 warehouse: orderWarehouseInput.value,
                 transporter: orderTransporterInput.value,
                 vehicle: orderVehicleInput.value,
-                lpg45kg: Number(orderLpg45kgInput.value),
-                lpg12kg: Number(orderLpg12kgInput.value),
-                lpg11kg: Number(orderLpg11kgInput.value),
-                chai45kg: Number(order45kgInput.value),
-                chai45kgDual: Number(order45kgDualInput.value),
-                chai12kg: Number(order12kgInput.value),
-                chai11kg: Number(order11kgInput.value),
+                lpg45kg: Number(orderLpg45kgInput.value) || 0,
+                L45dual: Number(orderL45dualInput.value) || 0,
+                lpg12kg: Number(orderLpg12kgInput.value) || 0,
+                lpg11kg: Number(orderLpg11kgInput.value) || 0,
+                chai45kg: Number(order45kgInput.value) || 0,
+                ch45Dual: Number(orderch45DualInput.value) || 0,
+                chai12kg: Number(order12kgInput.value) || 0,
+                chai11kg: Number(order11kgInput.value) || 0,
                 customerName: orderCustomerName.textContent
             };
             
-            if (!orderData.date || !orderData.warehouse || !orderData.transporter || !orderData.vehicle) {
-                alert("Vui lòng nhập đầy đủ thông tin bắt buộc.");
+            if (!orderData.date || !orderData.transporter || !orderData.vehicle) {
+                alert("Vui lòng nhập đầy đủ thông tin: Ngày tháng, Người vận chuyển, Số xe.");
                 return;
             }
 
             if (currentOrderKey) {
-                update(ref(database, 'orders/' + currentOrderKey), orderData)
+                // ===== START: MODIFIED COLLECTION NAME =====
+                const orderDocRef = doc(db, 'orders-md', currentOrderKey);
+                // ===== END: MODIFIED COLLECTION NAME =====
+                updateDoc(orderDocRef, orderData)
                 .then(() => {
                     alert('Đã cập nhật lệnh thành công!');
                     showCustomerList();
@@ -725,8 +778,10 @@
                     alert('Lỗi khi cập nhật lệnh: ' + error.message);
                 });
             } else {
-                const newOrderRef = push(ref(database, 'orders'));
-                set(newOrderRef, orderData)
+                orderData.createdAt = serverTimestamp();
+                // ===== START: MODIFIED COLLECTION NAME =====
+                addDoc(collection(db, 'orders-md'), orderData)
+                // ===== END: MODIFIED COLLECTION NAME =====
                 .then(() => {
                     alert('Đã lưu lệnh thành công!');
                     showCustomerList();
@@ -737,16 +792,15 @@
             }
         });
 
-        deleteAllOrdersBtn.addEventListener('click', () => {
+        deleteAllOrdersBtn.addEventListener('click', async () => {
             const password = prompt('CẢNH BÁO: Thao tác này sẽ xóa toàn bộ danh sách lệnh. Vui lòng nhập mật khẩu để xác nhận:');
             if (password === '97531') {
-                remove(ref(database, 'orders'))
-                .then(() => {
+                // ===== START: MODIFIED COLLECTION NAME =====
+                const success = await deleteCollection('orders-md');
+                // ===== END: MODIFIED COLLECTION NAME =====
+                if (success) {
                     alert('Đã xóa toàn bộ danh sách lệnh thành công!');
-                })
-                .catch((error) => {
-                    alert('Đã xảy ra lỗi khi xóa toàn bộ danh sách: ' + error.message);
-                });
+                }
             } else {
                 alert('Mật khẩu không đúng. Vui lòng thử lại.');
             }
@@ -754,6 +808,368 @@
 
         backToCustomerListBtn.addEventListener('click', () => { showCustomerList(); });
         backToCustomerListBtn2.addEventListener('click', () => { showCustomerList(); });
+        
+        importOrdersBtn.addEventListener('click', () => {
+            const password = prompt('Vui lòng nhập mật khẩu để nhập danh sách lệnh:');
+            if (password === '24680') {
+                excelOrderFile.click();
+            } else {
+                alert('Mật khẩu không đúng. Vui lòng thử lại.');
+            }
+        });
+
+        excelOrderFile.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const importedData = XLSX.utils.sheet_to_json(worksheet);
+
+                if (importedData.length === 0) {
+                    alert('File Excel không có dữ liệu hoặc cấu trúc không đúng.');
+                    return;
+                }
+
+                const importPromises = [];
+                importedData.forEach(row => {
+                    const orderData = {
+                        customerName: row['Tên Khách hàng'] || '',
+                        date: row['Ngày tháng'] || '',
+                        warehouse: row['Kho xuất'] || '',
+                        transporter: row['Người vận chuyển'] || '',
+                        vehicle: row['Số xe'] || '',
+                        lpg45kg: Number(row['LPG 45 kg']) || 0,
+                        L45dual: Number(row['LPG 45 kép']) || 0,
+                        lpg12kg: Number(row['LPG 12 kg']) || 0,
+                        lpg11kg: Number(row['LPG 11 kg']) || 0,
+                        chai45kg: Number(row['Chai 45 kg']) || 0,
+                        ch45Dual: Number(row['45 kg van kép']) || 0,
+                        chai12kg: Number(row['Chai 12 kg']) || 0,
+                        chai11kg: Number(row['Chai 11 kg']) || 0,
+                        createdAt: serverTimestamp()
+                    };
+                    // ===== START: MODIFIED COLLECTION NAME =====
+                    importPromises.push(addDoc(collection(db, 'orders-md'), orderData));
+                    // ===== END: MODIFIED COLLECTION NAME =====
+                });
+
+                Promise.all(importPromises)
+                    .then(() => {
+                        alert(`Đã nhập thành công ${importPromises.length} lệnh từ file Excel!`);
+                    })
+                    .catch(error => {
+                        alert("Đã xảy ra lỗi khi nhập dữ liệu: " + error.message);
+                    });
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        const orderTemplateHTML = `
+            <html>
+            <head>
+            <meta http-equiv=Content-Type content="text/html; charset=utf-8">
+            <meta name=Generator content="Microsoft Word 15 (filtered)">
+            <style>
+            @font-face
+                {font-family:"Cambria Math"; panose-1:2 4 5 3 5 4 6 3 2 4;}
+            @font-face
+                {font-family:Calibri; panose-1:2 15 5 2 2 2 4 3 2 4;}
+            @font-face
+                {font-family:"Segoe UI"; panose-1:2 11 5 2 4 2 4 2 2 3;}
+            p.MsoNormal, li.MsoNormal, div.MsoNormal
+                {margin-top:0cm; margin-right:0cm; margin-bottom:8.0pt; margin-left:0cm; line-height:107%; font-size:13.0pt; font-family:"Times New Roman",serif;}
+            p.MsoHeader, li.MsoHeader, div.MsoHeader
+                {margin:0cm; margin-bottom:.0001pt; font-size:13.0pt; font-family:"Times New Roman",serif;}
+            @page WordSection1
+                {size:595.3pt 841.9pt; margin:28.4pt 36.0pt 14.2pt 36.0pt;}
+            
+            /* CSS THÊM MỚI CHO LOGO */
+            div.WordSection1
+                {page:WordSection1; position: relative; /* Thêm thuộc tính position */}
+            #print-logo 
+                { position: absolute; top: 0; left: 0.5cm; width: 1.6cm; height: 1.6cm; } /* Đã điều chỉnh top */
+            </style>
+            </head>
+            <body lang=VI>
+            <div class=WordSection1>
+            
+            <img id="print-logo" src="https://pvgaslpg.com.vn/uploads/LPG%20xanh%20animation.gif" alt="Logo">
+
+            <p class=MsoHeader align=center style='text-align:center'><b><span lang=EN-US style='font-size:12.0pt'>CÔNG TY CỔ PHẦN KINH DOANH LPG VIỆT NAM</span></b></p>
+            <p class=MsoHeader align=center style='text-align:center'><b><span lang=EN-US style='font-size:12.0pt'>CHI NHÁNH MIỀN BẮC</span></b></p>
+            <p class=MsoHeader align=center style='text-align:center'><span lang=EN-US style='font-size:12.0pt'>Tầng 11, toà nhà Viện Dầu khí, tầng 11, số 167 Trung Kính, Yên Hòa, Hà Nội</span></p>
+            <div style='border:none;border-bottom:solid windowtext 1.0pt;padding:0cm 0cm 1.0pt 0cm'>
+            <p class=MsoHeader align=center style='text-align:center;border:none;padding:0cm'><span lang=EN-US style='font-size:12.0pt'>Điện thoại: 024.37667759 - FAX: 024.37667761</span></p>
+            </div>
+            <p class=MsoNormal align=center style='margin-top:12.0pt;text-align:center'><b><span lang=EN-US style='font-size:16.0pt;line-height:107%'>LỆNH XUẤT HÀNG</span></b></p>
+            <p class=MsoNormal align=center style='text-align:center'><b><span lang=EN-US>(KIÊM PHIẾU XUẤT KHO - CÓ GIÁ TRỊ XUẤT HÀNG TRONG NGÀY)</span></b></p>
+            <table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=0 style='width:212.6pt;margin-left:325.8pt;border-collapse:collapse'>
+             <tr style='height:14.3pt'>
+              <td width=142 nowrap valign=bottom style='width:106.3pt;border:solid windowtext 1.0pt;border-right:none;padding:0cm 5.4pt 0cm 5.4pt;height:14.3pt'>
+              <p class=MsoNormal style='margin-bottom:0cm;line-height:normal'><b><span style='font-size:11.0pt;color:black'>Số lệnh xuất hàng:</span></b></p>
+              </td>
+              <td width=72 nowrap valign=bottom style='width:53.9pt;border:solid windowtext 1.0pt;border-right:none;padding:0cm 5.4pt 0cm 5.4pt;height:14.3pt'>
+              <p class=MsoNormal align=right style='margin-bottom:0cm;text-align:right;line-height:normal'><span lang=EN-US style='font-size:11.0pt'>orderNumber</span></p>
+              </td>
+              <td width=70 nowrap valign=bottom style='width:52.4pt;border:solid windowtext 1.0pt;border-left:none;padding:0cm 5.4pt 0cm 5.4pt;height:14.3pt'>
+              <p class=MsoNormal style='margin-bottom:0cm;line-height:normal'><b><span style='font-size:11.0pt;color:black'>/KMĐ</span></b></p>
+              </td>
+             </tr>
+             <tr style='height:17.3pt'>
+              <td width=142 nowrap valign=bottom style='width:106.3pt;border-top:none;border-left:solid windowtext 1.0pt;border-bottom:solid windowtext 1.0pt;border-right:none;padding:0cm 5.4pt 0cm 5.4pt;height:17.3pt'>
+              <p class=MsoNormal style='margin-bottom:0cm;line-height:normal'><b><span style='font-size:11.0pt;color:black'>Ngày</span></b></p>
+              </td>
+              <td width=142 nowrap colspan=2 valign=bottom style='width:106.3pt;border-top:none;border-left:solid windowtext 1.0pt;border-bottom:solid windowtext 1.0pt;border-right:solid black 1.0pt;padding:0cm 5.4pt 0cm 5.4pt;height:17.3pt'>
+              <p class=MsoNormal style='margin-bottom:0cm;line-height:normal'><span lang=EN-US>date</span></p>
+              </td>
+             </tr>
+            </table>
+            <p class=MsoNormal style='margin-bottom:0cm;text-align:center;line-height:normal'><b><span lang=EN-US>&nbsp;</span></b></p>
+            
+            <table class=MsoNormalTable border=1 cellspacing=0 cellpadding=0 width="100%" style='width:100%;border-collapse:collapse; border: 1px solid windowtext; font-size:11.0pt'>
+                 <tr style="vertical-align: top;">
+                  <td colspan=4 style="padding: 5px;"><b>KHÁCH HÀNG:</b><br><br>customerName</td>
+                  <td colspan=2 style="padding: 5px;"><b>Người nhận hàng:</b><br>customerName</td>
+                 </tr>
+                 <tr>
+                  <td colspan=4 rowspan=2 style="border-top: none;">&nbsp;</td>
+                  <td style="padding: 5px;">Số CCCD</td>
+                  <td style="padding: 5px;">&nbsp;</td>
+                 </tr>
+                 <tr>
+                  <td style="padding: 5px;">Điện Thoại</td>
+                  <td style="padding: 5px;">&nbsp;</td>
+                 </tr>
+                 <tr style="vertical-align: top;">
+                  <td colspan=4 style="padding: 5px;"><b>KHO XUẤT HÀNG:</b><br>&nbsp;KHO MỸ ĐÌNH</td>
+                  <td style="padding: 5px;"><b>Người vận chuyển:</b></td>
+                  <td style="padding: 5px;">transporter</td>
+                 </tr>
+                 <tr>
+                  <td colspan=4 rowspan=2 style="border-top: none;">&nbsp;</td>
+                  <td style="padding: 5px;">Số CCCD</td>
+                  <td style="padding: 5px;">&nbsp;</td>
+                 </tr>
+                 <tr>
+                  <td style="padding: 5px;">Điện Thoại</td>
+                  <td style="padding: 5px;">&nbsp;</td>
+                 </tr>
+                 <tr>
+                  <td colspan=4 style="border-top: none;">&nbsp;</td>
+                  <td style="padding: 5px;"><b>Số xe:</b></td>
+                  <td style="padding: 5px;">vehicle</td>
+                 </tr>
+                 <tr style='text-align:center; font-weight: bold;'>
+                  <td style="padding: 5px;">Tên Hàng</td>
+                  <td style="padding: 5px;">Nhãn hiệu</td>
+                  <td style="padding: 5px;">Số chai</td>
+                  <td style="padding: 5px;">LPG (kg)</td>
+                  <td colspan=2 style="padding: 5px;">GHI CHÚ</td>
+                 </tr>
+                 <tr>
+                  <td style="padding: 5px;">LPG chai 45 kg</td>
+                  <td style="padding: 5px;">Petrovietnam Gas</td>
+                  <td style='text-align:center;'>lpg45kg</td>
+                  <td style='text-align:right; padding-right: 5px;'>Tich1</td>
+                  <td colspan=2>&nbsp;</td>
+                 </tr>
+                 <tr>
+                  <td style="padding: 5px;">LPG chai 45 van kép</td>
+                  <td style="padding: 5px;">Petrovietnam Gas</td>
+                  <td style='text-align:center;'>L45dual</td>
+                  <td style='text-align:right; padding-right: 5px;'>Tich4</td>
+                  <td colspan=2>&nbsp;</td>
+                 </tr>
+                 <tr>
+                  <td style="padding: 5px;">LPG chai 12 kg</td>
+                  <td style="padding: 5px;">Petrovietnam Gas</td>
+                  <td style='text-align:center;'>lpg12kg</td>
+                  <td style='text-align:right; padding-right: 5px;'>Tich2</td>
+                  <td colspan=2>&nbsp;</td>
+                 </tr>
+                 <tr>
+                  <td style="padding: 5px;">LPG chai 11 kg</td>
+                  <td style="padding: 5px;">Petrovietnam Gas</td>
+                  <td style='text-align:center;'>lpg11kg</td>
+                  <td style='text-align:right; padding-right: 5px;'>Tich3</td>
+                  <td colspan=2>&nbsp;</td>
+                 </tr>
+                 <tr>
+                  <td style="padding: 5px;"><b>Tổng lượng LPG</b></td>
+                  <td>&nbsp;</td>
+                  <td style='text-align:center;'><b>Sumchai</b></td>
+                  <td style='text-align:right; padding-right: 5px;'><b>Sumtich</b></td>
+                  <td colspan=2>&nbsp;</td>
+                 </tr>
+                 <tr>
+                  <td style="padding: 5px;">Chai LPG 45 kg</td>
+                  <td style="padding: 5px;">Petrovietnam Gas</td>
+                  <td style='text-align:center;'>chai45kg</td>
+                  <td>&nbsp;</td>
+                  <td colspan=2>&nbsp;</td>
+                 </tr>
+                 <tr>
+                  <td style="padding: 5px;">Chai LPG 45 kg van kép</td>
+                  <td style="padding: 5px;">Petrovietnam Gas</td>
+                  <td style='text-align:center;'>ch45Dual</td>
+                  <td>&nbsp;</td>
+                  <td colspan=2>&nbsp;</td>
+                 </tr>
+                 <tr>
+                  <td style="padding: 5px;">Chai LPG 12 kg</td>
+                  <td style="padding: 5px;">Petrovietnam Gas</td>
+                  <td style='text-align:center;'>chai12kg</td>
+                  <td>&nbsp;</td>
+                  <td colspan=2>&nbsp;</td>
+                 </tr>
+                 <tr>
+                  <td style="padding: 5px;">Chai LPG 11 kg</td>
+                  <td style="padding: 5px;">Petrovietnam Gas</td>
+                  <td style='text-align:center;'>chai11kg</td>
+                  <td>&nbsp;</td>
+                  <td colspan=2>&nbsp;</td>
+                 </tr>
+            </table>
+
+            <p class=MsoNormal style='margin-bottom:0cm;line-height:normal'><span lang=EN-US>&nbsp;</span></p>
+            <table class=MsoNormalTable border=1 cellspacing=0 cellpadding=0 width="100%" style='width:100%;border-collapse:collapse; border: 1px solid windowtext; text-align:center; font-size:11.0pt'>
+                 <tr style='font-weight: bold;'>
+                  <td style="padding: 5px;">Phòng TC-KT</td>
+                  <td style="padding: 5px;">Phòng KH-KD</td>
+                  <td style="padding: 5px;">Giám đốc/ Người được ủy quyền</td>
+                 </tr>
+                 <tr style='height: 80pt;'>
+                  <td>&nbsp;</td>
+                  <td>&nbsp;</td>
+                  <td>&nbsp;</td>
+                 </tr>
+            </table>
+            <p class=MsoNormal style='margin-bottom:0cm;line-height:normal'><span lang=EN-US>&nbsp;</span></p>
+            <table class=MsoNormalTable border=1 cellspacing=0 cellpadding=0 width="100%" style='width:100%;border-collapse:collapse; border: 1px solid windowtext; text-align:center; font-size:11.0pt'>
+                 <tr>
+                  <td colspan=2 style='font-weight: bold; padding: 5px;'>Người giao hàng</td>
+                  <td style='font-weight: bold; padding: 5px;'>Người nhận hàng</td>
+                 </tr>
+                 <tr style='font-weight: bold;'>
+                  <td style="padding: 5px;">Quản đốc trạm nạp</td>
+                  <td style="padding: 5px;">Thủ kho</td>
+                  <td style="padding: 5px;">Lái xe nhận hàng</td>
+                 </tr>
+                 <tr style='height: 80pt;'>
+                  <td>&nbsp;</td>
+                  <td>&nbsp;</td>
+                  <td>&nbsp;</td>
+                 </tr>
+            </table>
+            <p class=MsoNormal><span lang=EN-US>&nbsp;</span></p>
+            </div>
+            </body>
+            </html>
+        `;
+
+        const setupOrderInputFields = () => {
+            const numberInputs = [
+                orderLpg45kgInput,
+                orderL45dualInput,
+                orderLpg12kgInput,
+                orderLpg11kgInput,
+                order45kgInput,
+                orderch45DualInput,
+                order12kgInput,
+                order11kgInput
+            ];
+
+            numberInputs.forEach((input, index) => {
+                // Select all text on focus
+                input.addEventListener('focus', () => {
+                    input.select();
+                });
+                
+                // Handle keyboard navigation
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const nextInput = numberInputs[index + 1];
+                        if (nextInput) {
+                            nextInput.focus();
+                        } else {
+                             submitOrderBtn.focus();
+                        }
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        const prevInput = numberInputs[index - 1];
+                        if (prevInput) {
+                            prevInput.focus();
+                        }
+                    } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        const nextInput = numberInputs[index + 1];
+                        if (nextInput) {
+                            nextInput.focus();
+                        }
+                    }
+                });
+
+                // Ensure non-negative value
+                input.addEventListener('input', () => {
+                    if (input.value < 0) {
+                        input.value = 0;
+                    }
+                });
+            });
+        };
+
+        const printOrder = (orderData) => {
+            const tich1 = orderData.lpg45kg * 45;
+            const tich2 = orderData.lpg12kg * 12;
+            const tich3 = orderData.lpg11kg * 11;
+            const tich4 = orderData.L45dual * 45;
+            const sumChai = orderData.lpg45kg + orderData.L45dual + orderData.lpg12kg + orderData.lpg11kg;
+            const sumTich = tich1 + tich4 + tich2 + tich3;
+
+            const replacements = {
+                orderNumber: orderData.orderNumber,
+                date: orderData.date,
+                customerName: orderData.customerName,
+                transporter: orderData.transporter,
+                vehicle: orderData.vehicle,
+                lpg45kg: orderData.lpg45kg,
+                L45dual: orderData.L45dual,
+                lpg12kg: orderData.lpg12kg,
+                lpg11kg: orderData.lpg11kg,
+                chai45kg: orderData.chai45kg,
+                ch45Dual: orderData.ch45Dual,
+                chai12kg: orderData.chai12kg,
+                chai11kg: orderData.chai11kg,
+                Tich1: tich1,
+                Tich2: tich2,
+                Tich3: tich3,
+                Tich4: tich4,
+                Sumchai: sumChai,
+                Sumtich: sumTich
+            };
+
+            let finalHTML = orderTemplateHTML;
+            for (const key in replacements) {
+                const regex = new RegExp(key, 'g');
+                finalHTML = finalHTML.replace(regex, replacements[key]);
+            }
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(finalHTML);
+            printWindow.document.close();
+            printWindow.focus();
+            
+            setTimeout(() => {
+                printWindow.print();
+            }, 500);
+        };
+
 
         const renderOrdersForPage = (pageNumber) => {
             orderTableBody.innerHTML = '';
@@ -763,31 +1179,29 @@
             const ordersToDisplay = allOrders.slice(startIndex, endIndex);
 
             const totalPages = Math.ceil(totalOrders / ITEMS_PER_PAGE);
+            currentPage = totalPages > 0 ? totalPages : 1;
             pageInfoSpan.textContent = `Trang ${pageNumber}/${totalPages || 1}`;
             prevPageBtn.disabled = pageNumber === 1;
             nextPageBtn.disabled = pageNumber === totalPages || totalOrders === 0;
 
-            const webAppUrl = "https://script.google.com/macros/s/AKfycbx-zb6rJ5-CCgiIk0-hlzvMUOcy2QRf0MzaQzfMvb99dZ-knVK9uaAhXalhoI3zKXE4/exec";
-            const sheetsUrl = "https://docs.google.com/spreadsheets/d/1TIgp53shmETSNcK57VsQKdCXA68re_WT9VCuWmo5wUM/edit?gid=431300796#gid=431300796";
-
-            ordersToDisplay.forEach((order, index) => {
+            ordersToDisplay.forEach((order) => {
                 const row = orderTableBody.insertRow();
-                const orderNumber = startIndex + index + 1;
                 
-                row.insertCell(0).textContent = orderNumber;
+                row.insertCell(0).textContent = order.orderNumber;
                 row.insertCell(1).textContent = order.customerName;
                 row.insertCell(2).textContent = order.date;
                 row.insertCell(3).textContent = order.warehouse;
                 row.insertCell(4).textContent = order.vehicle;
                 row.insertCell(5).textContent = order.lpg45kg;
-                row.insertCell(6).textContent = order.lpg12kg;
-                row.insertCell(7).textContent = order.lpg11kg;
-                row.insertCell(8).textContent = order.chai45kg;
-                row.insertCell(9).textContent = order.chai45kgDual;
-                row.insertCell(10).textContent = order.chai12kg;
-                row.insertCell(11).textContent = order.chai11kg;
+                row.insertCell(6).textContent = order.L45dual;
+                row.insertCell(7).textContent = order.lpg12kg;
+                row.insertCell(8).textContent = order.lpg11kg;
+                row.insertCell(9).textContent = order.chai45kg;
+                row.insertCell(10).textContent = order.ch45Dual;
+                row.insertCell(11).textContent = order.chai12kg;
+                row.insertCell(12).textContent = order.chai11kg;
                 
-                const actionsCell = row.insertCell(12);
+                const actionsCell = row.insertCell(13);
                 actionsCell.classList.add('action-buttons');
 
                 const editBtn = document.createElement('button');
@@ -806,67 +1220,24 @@
                 const printBtn = document.createElement('button');
                 printBtn.textContent = 'In lệnh';
                 printBtn.className = 'print-btn';
-                printBtn.addEventListener('click', () => {
-                    const orderDataForSheets = {
-                        orderNumber: orderNumber,
-                        customerName: order.customerName,
-                        date: order.date,
-                        warehouse: order.warehouse,
-                        transporter: order.transporter,
-                        vehicle: order.vehicle,
-                        lpg45kg: order.lpg45kg,
-                        lpg12kg: order.lpg12kg,
-                        lpg11kg: order.lpg11kg,
-                        chai45kg: order.chai45kg,
-                        chai45kgDual: order.chai45kgDual,
-                        chai12kg: order.chai12kg,
-                        chai11kg: order.chai11kg
-                    };
 
-                    fetch(webAppUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'text/plain',
-                        },
-                        body: JSON.stringify(orderDataForSheets)
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`Lỗi HTTP: ${response.status}`);
-                        }
-                        return response.text();
-                    })
-                    .then(data => {
-                        alert('Đã gửi dữ liệu thành công! Phản hồi từ server: ' + data);
-                    })
-                    .catch(error => {
-                        alert('Lỗi khi gửi dữ liệu: ' + error);
-                    });
-                    
-                    setTimeout(() => {
-                        window.open(sheetsUrl, '_blank');
-                    }, 5000);
+                printBtn.addEventListener('click', () => {
+                    printOrder(order); 
                 });
                 actionsCell.appendChild(printBtn);
             });
         };
 
-        onValue(ref(database, 'orders'), (snapshot) => {
-            const data = snapshot.val();
+        // ===== START: MODIFIED COLLECTION NAME =====
+        const ordersQuery = query(collection(db, 'orders-md'), orderBy('createdAt'));
+        // ===== END: MODIFIED COLLECTION NAME =====
+        onSnapshot(ordersQuery, (querySnapshot) => {
             allOrders = [];
-
-            if (data) {
-                const sortedKeys = Object.keys(data).sort((a, b) => {
-                    const timeA = parseInt(a.substring(1));
-                    const timeB = parseInt(b.substring(1));
-                    return timeA - timeB;
-                });
-                
-                sortedKeys.forEach((key, index) => {
-                    allOrders.push({...data[key], key: key, orderNumber: index + 1});
-                });
-            }
-
+            let orderCounter = 1;
+            querySnapshot.forEach((doc) => {
+                allOrders.push({ ...doc.data(), key: doc.id, orderNumber: orderCounter++ });
+            });
+            
             const totalPages = Math.ceil(allOrders.length / ITEMS_PER_PAGE);
             currentPage = totalPages > 0 ? totalPages : 1;
             renderOrdersForPage(currentPage);
@@ -901,10 +1272,11 @@
                 'Người vận chuyển': order.transporter,
                 'Số xe': order.vehicle,
                 'LPG 45 kg': order.lpg45kg,
+                'LPG 45 kép': order.L45dual,
                 'LPG 12 kg': order.lpg12kg,
                 'LPG 11 kg': order.lpg11kg,
                 'Chai 45 kg': order.chai45kg,
-                '45 kg van kép': order.chai45kgDual,
+                '45 kg van kép': order.ch45Dual,
                 'Chai 12 kg': order.chai12kg,
                 'Chai 11 kg': order.chai11kg
             }));
