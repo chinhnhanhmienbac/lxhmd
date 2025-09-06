@@ -23,6 +23,50 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             display: none;
         }
+        
+        #login-form-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        #login-form-container h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        
+        #login-form-container .form-group {
+            margin-bottom: 15px;
+        }
+
+        #login-form-container input[type="email"],
+        #login-form-container input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        #login-form-container button {
+            width: 100%;
+            padding: 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        #login-form-container button:hover {
+            background-color: #2980b9;
+        }
 
         header {
             display: flex;
@@ -141,7 +185,6 @@
             background-color: #1e252e;
         }
 
-
         button:hover {
             background-color: #2980b9;
         }
@@ -250,7 +293,19 @@
     </style>
 </head>
 <body>
-
+    
+    <div id="login-form-container">
+        <h2>Đăng nhập để truy cập</h2>
+        <div class="form-group">
+            <label for="login-email">Email:</label>
+            <input type="email" id="login-email" value="m*****@pvgaslpg.com.vn" readonly>
+        </div>
+        <div class="form-group">
+            <label for="login-password">Mật khẩu:</label>
+            <input type="password" id="login-password">
+        </div>
+        <button id="login-btn">Đăng nhập</button>
+    </div>
     <div class="container" id="main-content">
         <header>
             <img src="https://pvgaslpg.com.vn/uploads/LPG%20xanh%20animation.gif" alt="Logo PV Gas LPG" width="150" height="150">
@@ -409,40 +464,58 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        // [THAY ĐỔI] Nhập các hàm từ Realtime Database thay vì Firestore
         import { 
-            getFirestore, collection, doc, setDoc, getDoc, onSnapshot, 
-            updateDoc, deleteDoc, addDoc, getDocs, query, orderBy, serverTimestamp 
-        } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+            getDatabase, ref, set, get, onValue, 
+            update, remove, push, query, orderByChild, serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
         
-        const correctPassword = "mydinh";
         const mainContent = document.getElementById('main-content');
-        
-        function askForPassword() {
-            let password = prompt("Vui lòng nhập mật khẩu để truy cập:");
-            if (password === correctPassword) {
-                mainContent.style.display = 'block';
-            } else {
-                alert("Mật khẩu không đúng. Vui lòng thử lại.");
-                askForPassword();
-            }
-        }
-        
-        window.onload = askForPassword;
+        const loginFormContainer = document.getElementById('login-form-container');
+        const loginPasswordInput = document.getElementById('login-password');
+        const loginBtn = document.getElementById('login-btn');
 
-        // ===== START: NEW FIREBASE CONFIG =====
+        // [THAY ĐỔI] Cập nhật cấu hình Firebase mới
         const firebaseConfig = {
-          apiKey: "AIzaSyDg9EEQoXle1Sraw5RbZQ7FEDL5c0MChbI",
-          authDomain: "chinhanhmienbac-76730.firebaseapp.com",
-          projectId: "chinhanhmienbac-76730",
-          storageBucket: "chinhanhmienbac-76730.firebasestorage.app",
-          messagingSenderId: "562846259410",
-          appId: "1:562846259410:web:71101f799bdadf5ad5b50b",
-          measurementId: "G-3WJMVDMJLE"
+          apiKey: "AIzaSyAPXZaRlQIiUttyjeANUTnJzLPujrah8nk",
+          authDomain: "lxh-rtime.firebaseapp.com",
+          databaseURL: "https://lxh-rtime-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "lxh-rtime",
+          storageBucket: "lxh-rtime.firebasestorage.app",
+          messagingSenderId: "982449495226",
+          appId: "1:982449495226:web:31abb3c1b483a6ec283683",
+          measurementId: "G-3PJGRVJFPG"
         };
-        // ===== END: NEW FIREBASE CONFIG =====
 
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        const analytics = getAnalytics(app);
+
+        // [THAY ĐỔI] Khởi tạo Realtime Database
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+
+        loginBtn.addEventListener('click', async () => {
+            const email = "mydinh@pvgaslpg.com.vn";
+            const password = loginPasswordInput.value;
+
+            if (!password) {
+                alert('Vui lòng nhập mật khẩu.');
+                return;
+            }
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                console.log('Đăng nhập thành công:', userCredential.user);
+                loginFormContainer.style.display = 'none';
+                mainContent.style.display = 'block';
+            } catch (error) {
+                console.error('Lỗi đăng nhập:', error.code, error.message);
+                alert('Đăng nhập không thành công. Vui lòng kiểm tra lại mật khẩu.');
+            }
+        });
 
         const customerView = document.getElementById('customer-view');
         const customerIdInput = document.getElementById('customerId');
@@ -569,10 +642,10 @@
                 return;
             }
             
-            const customerDocRef = doc(db, 'customers', safeCustomerId);
+            const customerRef = ref(db, 'customers/' + safeCustomerId);
             try {
-                const docSnap = await getDoc(customerDocRef);
-                if (docSnap.exists()) {
+                const snapshot = await get(customerRef);
+                if (snapshot.exists()) {
                     alert('Mã khách hàng đã tồn tại. Vui lòng nhập mã khác.');
                     return;
                 }
@@ -581,7 +654,7 @@
                 return;
             }
 
-            setDoc(customerDocRef, {
+            set(customerRef, {
                 id: safeCustomerId,
                 originalId: customerId,
                 name: customerName
@@ -599,7 +672,7 @@
         const deleteCustomer = (customerIdKey) => {
             const password = prompt('Vui lòng nhập mật khẩu để xóa:');
             if (password === '54321') {
-                deleteDoc(doc(db, 'customers', customerIdKey))
+                remove(ref(db, 'customers/' + customerIdKey))
                 .then(() => {
                     alert('Đã xóa khách hàng thành công!');
                 })
@@ -611,47 +684,35 @@
             }
         };
 
-        async function deleteCollection(collectionName) {
-            try {
-                const collectionRef = collection(db, collectionName);
-                const querySnapshot = await getDocs(collectionRef);
-                const deletePromises = [];
-                querySnapshot.forEach((doc) => {
-                    deletePromises.push(deleteDoc(doc.ref));
-                });
-                await Promise.all(deletePromises);
-                return true;
-            } catch (error) {
-                console.error(`Lỗi khi xóa collection ${collectionName}:`, error);
-                alert(`Đã xảy ra lỗi khi xóa toàn bộ danh sách: ${error.message}`);
-                return false;
-            }
-        }
-
         deleteAllCustomersBtn.addEventListener('click', async () => {
             const password = prompt('CẢNH BÁO: Thao tác này sẽ xóa toàn bộ danh sách khách hàng. Vui lòng nhập mật khẩu để xác nhận:');
             if (password === '54321') {
-                const success = await deleteCollection('customers');
-                if (success) {
+                remove(ref(db, 'customers'))
+                .then(() => {
                     alert('Đã xóa toàn bộ danh sách khách hàng thành công!');
-                }
+                })
+                .catch((error) => {
+                    alert('Đã xảy ra lỗi khi xóa toàn bộ danh sách: ' + error.message);
+                });
             } else {
                 alert('Mật khẩu không đúng. Vui lòng thử lại.');
             }
         });
 
-        const customersCollectionRef = query(collection(db, 'customers'), orderBy('originalId'));
-        onSnapshot(customersCollectionRef, (querySnapshot) => {
+        const customersQuery = query(ref(db, 'customers'), orderByChild('originalId'));
+        onValue(customersQuery, (snapshot) => {
             customerData = [];
             customerTableBody.innerHTML = '';
             let index = 1;
-
             const customers = [];
-            querySnapshot.forEach((doc) => {
-                customers.push({ key: doc.id, ...doc.data() });
-            });
+
+            if (snapshot.exists()) {
+                const customersObject = snapshot.val();
+                for (const key in customersObject) {
+                    customers.push({ key: key, ...customersObject[key] });
+                }
+            }
             
-            // Re-sort in memory just in case, though Firestore query should handle it
             customers.sort((a, b) => (a.originalId || a.id).localeCompare(b.originalId || b.id));
 
             customers.forEach((customer) => {
@@ -701,26 +762,25 @@
                 const importedData = XLSX.utils.sheet_to_json(worksheet);
 
                 if (importedData.length > 0) {
-                    const importPromises = [];
+                    const updates = {};
                     importedData.forEach(row => {
                         const originalId = row['Mã số'];
                         const customerName = row['Tên khách hàng'];
                         if (originalId && customerName) {
                             const safeCustomerId = String(originalId).trim().replace(/[.#$[\]]/g, '');
                             if (safeCustomerId) {
-                                const customerDocRef = doc(db, 'customers', safeCustomerId);
                                 const customerPayload = {
                                     id: safeCustomerId,
                                     originalId: String(originalId).trim(),
                                     name: customerName
                                 };
-                                importPromises.push(setDoc(customerDocRef, customerPayload));
+                                updates['/customers/' + safeCustomerId] = customerPayload;
                             }
                         }
                     });
 
-                    Promise.all(importPromises)
-                        .then(() => { alert(`Đã nhập thành công ${importPromises.length} khách hàng từ file Excel!`); })
+                    update(ref(db), updates)
+                        .then(() => { alert(`Đã nhập thành công ${Object.keys(updates).length} khách hàng từ file Excel!`); })
                         .catch(error => { alert("Đã xảy ra lỗi khi nhập dữ liệu: " + error.message); });
                 } else {
                     alert('File Excel không có dữ liệu hoặc cấu trúc không đúng.');
@@ -766,10 +826,8 @@
             }
 
             if (currentOrderKey) {
-                // ===== START: MODIFIED COLLECTION NAME =====
-                const orderDocRef = doc(db, 'orders-md', currentOrderKey);
-                // ===== END: MODIFIED COLLECTION NAME =====
-                updateDoc(orderDocRef, orderData)
+                const orderRef = ref(db, 'orders-md/' + currentOrderKey);
+                update(orderRef, orderData)
                 .then(() => {
                     alert('Đã cập nhật lệnh thành công!');
                     showCustomerList();
@@ -779,9 +837,8 @@
                 });
             } else {
                 orderData.createdAt = serverTimestamp();
-                // ===== START: MODIFIED COLLECTION NAME =====
-                addDoc(collection(db, 'orders-md'), orderData)
-                // ===== END: MODIFIED COLLECTION NAME =====
+                const ordersRef = ref(db, 'orders-md');
+                push(ordersRef, orderData)
                 .then(() => {
                     alert('Đã lưu lệnh thành công!');
                     showCustomerList();
@@ -795,12 +852,13 @@
         deleteAllOrdersBtn.addEventListener('click', async () => {
             const password = prompt('CẢNH BÁO: Thao tác này sẽ xóa toàn bộ danh sách lệnh. Vui lòng nhập mật khẩu để xác nhận:');
             if (password === '97531') {
-                // ===== START: MODIFIED COLLECTION NAME =====
-                const success = await deleteCollection('orders-md');
-                // ===== END: MODIFIED COLLECTION NAME =====
-                if (success) {
+                remove(ref(db, 'orders-md'))
+                .then(() => {
                     alert('Đã xóa toàn bộ danh sách lệnh thành công!');
-                }
+                })
+                .catch((error) => {
+                    alert('Đã xảy ra lỗi khi xóa toàn bộ danh sách lệnh: ' + error.message);
+                });
             } else {
                 alert('Mật khẩu không đúng. Vui lòng thử lại.');
             }
@@ -836,6 +894,7 @@
                 }
 
                 const importPromises = [];
+                const ordersRef = ref(db, 'orders-md');
                 importedData.forEach(row => {
                     const orderData = {
                         customerName: row['Tên Khách hàng'] || '',
@@ -853,9 +912,7 @@
                         chai11kg: Number(row['Chai 11 kg']) || 0,
                         createdAt: serverTimestamp()
                     };
-                    // ===== START: MODIFIED COLLECTION NAME =====
-                    importPromises.push(addDoc(collection(db, 'orders-md'), orderData));
-                    // ===== END: MODIFIED COLLECTION NAME =====
+                    importPromises.push(push(ordersRef, orderData));
                 });
 
                 Promise.all(importPromises)
@@ -888,11 +945,10 @@
             @page WordSection1
                 {size:595.3pt 841.9pt; margin:28.4pt 36.0pt 14.2pt 36.0pt;}
             
-            /* CSS THÊM MỚI CHO LOGO */
             div.WordSection1
-                {page:WordSection1; position: relative; /* Thêm thuộc tính position */}
+                {page:WordSection1; position: relative;}
             #print-logo 
-                { position: absolute; top: 0; left: 0.5cm; width: 1.6cm; height: 1.6cm; } /* Đã điều chỉnh top */
+                { position: absolute; top: 0cm; left: 0.5cm; width: 1.6cm; height: 1.6cm; }
             </style>
             </head>
             <body lang=VI>
@@ -946,12 +1002,12 @@
                   <td style="padding: 5px;">&nbsp;</td>
                  </tr>
                  <tr style="vertical-align: top;">
-                  <td colspan=4 style="padding: 5px;"><b>KHO XUẤT HÀNG:</b><br>&nbsp;KHO MỸ ĐÌNH</td>
+                  <td colspan=4 style="padding: 5px;"><b>KHO XUẤT HÀNG:</b></td>
                   <td style="padding: 5px;"><b>Người vận chuyển:</b></td>
                   <td style="padding: 5px;">transporter</td>
                  </tr>
                  <tr>
-                  <td colspan=4 rowspan=2 style="border-top: none;">&nbsp;</td>
+                  <td colspan=4 rowspan=2 style="border-top: none;">&nbsp;KHO MỸ ĐÌNH</td>
                   <td style="padding: 5px;">Số CCCD</td>
                   <td style="padding: 5px;">&nbsp;</td>
                  </tr>
@@ -972,29 +1028,29 @@
                   <td colspan=2 style="padding: 5px;">GHI CHÚ</td>
                  </tr>
                  <tr>
-                  <td style="padding: 5px;">LPG chai 45 kg</td>
-                  <td style="padding: 5px;">Petrovietnam Gas</td>
+                  <td style="padding: 5px; white-space: nowrap; word-break: keep-all;">LPG chai 45 kg</td>
+                  <td style="padding: 5px; white-space: nowrap; word-break: keep-all;">Petrovietnam Gas</td>
                   <td style='text-align:center;'>lpg45kg</td>
                   <td style='text-align:right; padding-right: 5px;'>Tich1</td>
                   <td colspan=2>&nbsp;</td>
                  </tr>
                  <tr>
-                  <td style="padding: 5px;">LPG chai 45 van kép</td>
-                  <td style="padding: 5px;">Petrovietnam Gas</td>
+                  <td style="padding: 5px; white-space: nowrap; word-break: keep-all;">LPG chai 45 van kép</td>
+                  <td style="padding: 5px; white-space: nowrap; word-break: keep-all;">Petrovietnam Gas</td>
                   <td style='text-align:center;'>L45dual</td>
                   <td style='text-align:right; padding-right: 5px;'>Tich4</td>
                   <td colspan=2>&nbsp;</td>
                  </tr>
                  <tr>
-                  <td style="padding: 5px;">LPG chai 12 kg</td>
-                  <td style="padding: 5px;">Petrovietnam Gas</td>
+                  <td style="padding: 5px; white-space: nowrap; word-break: keep-all;">LPG chai 12 kg</td>
+                  <td style="padding: 5px; white-space: nowrap; word-break: keep-all;">Petrovietnam Gas</td>
                   <td style='text-align:center;'>lpg12kg</td>
                   <td style='text-align:right; padding-right: 5px;'>Tich2</td>
                   <td colspan=2>&nbsp;</td>
                  </tr>
                  <tr>
-                  <td style="padding: 5px;">LPG chai 11 kg</td>
-                  <td style="padding: 5px;">Petrovietnam Gas</td>
+                  <td style="padding: 5px; white-space: nowrap; word-break: keep-all;">LPG chai 11 kg</td>
+                  <td style="padding: 5px; white-space: nowrap; word-break: keep-all;">Petrovietnam Gas</td>
                   <td style='text-align:center;'>lpg11kg</td>
                   <td style='text-align:right; padding-right: 5px;'>Tich3</td>
                   <td colspan=2>&nbsp;</td>
@@ -1007,29 +1063,29 @@
                   <td colspan=2>&nbsp;</td>
                  </tr>
                  <tr>
-                  <td style="padding: 5px;">Chai LPG 45 kg</td>
-                  <td style="padding: 5px;">Petrovietnam Gas</td>
+                  <td style="padding: 5px; white-space: nowrap; word-break: keep-all;">Chai LPG 45 kg</td>
+                  <td style="padding: 5px; white-space: nowrap; word-break: keep-all;">Petrovietnam Gas</td>
                   <td style='text-align:center;'>chai45kg</td>
                   <td>&nbsp;</td>
                   <td colspan=2>&nbsp;</td>
                  </tr>
                  <tr>
-                  <td style="padding: 5px;">Chai LPG 45 kg van kép</td>
-                  <td style="padding: 5px;">Petrovietnam Gas</td>
+                  <td style="padding: 5px; white-space: nowrap; word-break: keep-all;">Chai LPG 45 kg van kép</td>
+                  <td style="padding: 5px; white-space: nowrap; word-break: keep-all;">Petrovietnam Gas</td>
                   <td style='text-align:center;'>ch45Dual</td>
                   <td>&nbsp;</td>
                   <td colspan=2>&nbsp;</td>
                  </tr>
                  <tr>
-                  <td style="padding: 5px;">Chai LPG 12 kg</td>
-                  <td style="padding: 5px;">Petrovietnam Gas</td>
+                  <td style="padding: 5px; white-space: nowrap; word-break: keep-all;">Chai LPG 12 kg</td>
+                  <td style="padding: 5px; white-space: nowrap; word-break: keep-all;">Petrovietnam Gas</td>
                   <td style='text-align:center;'>chai12kg</td>
                   <td>&nbsp;</td>
                   <td colspan=2>&nbsp;</td>
                  </tr>
                  <tr>
-                  <td style="padding: 5px;">Chai LPG 11 kg</td>
-                  <td style="padding: 5px;">Petrovietnam Gas</td>
+                  <td style="padding: 5px; white-space: nowrap; word-break: keep-all;">Chai LPG 11 kg</td>
+                  <td style="padding: 5px; white-space: nowrap; word-break: keep-all;">Petrovietnam Gas</td>
                   <td style='text-align:center;'>chai11kg</td>
                   <td>&nbsp;</td>
                   <td colspan=2>&nbsp;</td>
@@ -1085,12 +1141,10 @@
             ];
 
             numberInputs.forEach((input, index) => {
-                // Select all text on focus
                 input.addEventListener('focus', () => {
                     input.select();
                 });
                 
-                // Handle keyboard navigation
                 input.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
@@ -1115,7 +1169,6 @@
                     }
                 });
 
-                // Ensure non-negative value
                 input.addEventListener('input', () => {
                     if (input.value < 0) {
                         input.value = 0;
@@ -1170,7 +1223,6 @@
             }, 500);
         };
 
-
         const renderOrdersForPage = (pageNumber) => {
             orderTableBody.innerHTML = '';
             const totalOrders = allOrders.length;
@@ -1179,7 +1231,7 @@
             const ordersToDisplay = allOrders.slice(startIndex, endIndex);
 
             const totalPages = Math.ceil(totalOrders / ITEMS_PER_PAGE);
-            currentPage = totalPages > 0 ? totalPages : 1;
+            
             pageInfoSpan.textContent = `Trang ${pageNumber}/${totalPages || 1}`;
             prevPageBtn.disabled = pageNumber === 1;
             nextPageBtn.disabled = pageNumber === totalPages || totalOrders === 0;
@@ -1228,16 +1280,20 @@
             });
         };
 
-        // ===== START: MODIFIED COLLECTION NAME =====
-        const ordersQuery = query(collection(db, 'orders-md'), orderBy('createdAt'));
-        // ===== END: MODIFIED COLLECTION NAME =====
-        onSnapshot(ordersQuery, (querySnapshot) => {
+        const ordersQuery = query(ref(db, 'orders-md'), orderByChild('createdAt'));
+        onValue(ordersQuery, (snapshot) => {
             allOrders = [];
-            let orderCounter = 1;
-            querySnapshot.forEach((doc) => {
-                allOrders.push({ ...doc.data(), key: doc.id, orderNumber: orderCounter++ });
-            });
+            if(snapshot.exists()) {
+                const ordersObject = snapshot.val();
+                for (const key in ordersObject) {
+                    allOrders.push({ ...ordersObject[key], key: key, orderNumber: 0 });
+                }
+            }
             
+            allOrders.forEach((order, index) => {
+                order.orderNumber = index + 1;
+            });
+
             const totalPages = Math.ceil(allOrders.length / ITEMS_PER_PAGE);
             currentPage = totalPages > 0 ? totalPages : 1;
             renderOrdersForPage(currentPage);
