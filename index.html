@@ -1294,8 +1294,12 @@
                 order.orderNumber = index + 1;
             });
 
+            // Đảo ngược mảng để lệnh mới nhất lên đầu
+            allOrders.reverse();
+
             const totalPages = Math.ceil(allOrders.length / ITEMS_PER_PAGE);
-            currentPage = totalPages > 0 ? totalPages : 1;
+            // Sau khi đảo ngược, hiển thị trang đầu tiên
+            currentPage = 1;
             renderOrdersForPage(currentPage);
         });
 
