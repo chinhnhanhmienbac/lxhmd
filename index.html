@@ -160,6 +160,24 @@
             padding: 10px 15px;
             font-size: 16px;
         }
+        
+        button.lock-orders-btn {
+            background-color: #f39c12; 
+        }
+        
+        button.lock-orders-btn:hover {
+            background-color: #e67e22;
+        }
+        
+        tr.locked-order {
+            opacity: 0.6;
+            background-color: #f2f2f2 !important; 
+        }
+
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
 
         button.delete-btn:hover, button.delete-all-btn:hover {
             background-color: #c0392b;
@@ -254,6 +272,11 @@
             background-color: #f2f2f2;
             font-weight: bold;
         }
+        
+        th.checkbox-col, td.checkbox-col {
+            width: 40px;
+            text-align: center;
+        }
 
         tr:nth-child(even) {
             background-color: #f9f9f9;
@@ -313,25 +336,11 @@
         </header>
 
         <div id="customer-view">
-            <section class="input-section">
-                <h2>Thêm khách hàng vào dữ liệu</h2>
-                <div class="form-group">
-                    <label for="customerId">Mã số khách hàng:</label>
-                    <input type="text" id="customerId" placeholder="Mã số">
-                </div>
-                <div class="form-group">
-                    <label for="customerName">Tên khách hàng:</label>
-                    <input type="text" id="customerName" placeholder="Tên khách hàng">
-                </div>
-                <button id="saveBtn">Lưu khách hàng</button>
-            </section>
-
             <section class="list-section">
                 <div class="list-header">
                     <h2>Danh sách khách hàng</h2>
                     <div class="list-header-buttons">
-                        <button id="importBtn">Nhập từ Excel</button>
-                        <input type="file" id="excelFile" accept=".xlsx, .xls" style="display:none;">
+                        <button id="showAddCustomerViewBtn">Thêm khách hàng</button>
                         <button id="exportBtn">Xuất ra Excel</button>
                         <button id="deleteAllCustomersBtn" class="delete-all-btn">Xoá toàn bộ KH</button>
                         <button id="viewOrdersBtn">Xem danh sách lệnh</button>
@@ -351,6 +360,29 @@
                         </tbody>
                 </table>
             </section>
+        </div>
+
+        <div id="add-customer-view" class="hidden">
+            <section class="input-section">
+                <h2>Thêm khách hàng vào dữ liệu</h2>
+                <div class="form-group">
+                    <label for="customerId">Mã số khách hàng:</label>
+                    <input type="text" id="customerId" placeholder="Mã số">
+                </div>
+                <div class="form-group">
+                    <label for="customerName">Tên khách hàng:</label>
+                    <input type="text" id="customerName" placeholder="Tên khách hàng">
+                </div>
+                <button id="saveBtn">Lưu khách hàng</button>
+            </section>
+
+            <section class="input-section">
+                <h2>Hoặc nhập từ Excel</h2>
+                <button id="importBtn">Nhập từ Excel</button>
+                <input type="file" id="excelFile" accept=".xlsx, .xls" style="display:none;">
+            </section>
+            
+            <button id="backToCustomerListBtn3">Quay lại</button>
         </div>
 
         <div id="order-form-view" class="hidden">
@@ -422,6 +454,8 @@
                 <div class="list-header">
                     <h2>Danh sách các Lệnh Xuất Hàng</h2>
                     <div class="list-header-buttons">
+                        <button id="selectAllOrdersBtn">Chọn tất cả</button> 
+                        <button id="lockOrdersBtn" class="lock-orders-btn">Khoá lệnh</button> 
                         <button id="importOrdersBtn" class="import-orders-btn">Nhập danh sách lệnh</button>
                         <input type="file" id="excelOrderFile" accept=".xlsx, .xls" style="display:none;">
                         <button id="showStatisticsBtn" class="statistics-btn">Xuất DS lệnh</button>
@@ -433,6 +467,7 @@
                 <table id="orderTable">
                     <thead>
                         <tr>
+                            <th class="checkbox-col">Chọn</th> 
                             <th>Thứ tự</th>
                             <th>Tên Khách hàng</th>
                             <th>Ngày tháng</th>
@@ -466,7 +501,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-        // [THAY ĐỔI] Nhập các hàm từ Realtime Database thay vì Firestore
         import { 
             getDatabase, ref, set, get, onValue, 
             update, remove, push, query, orderByChild, serverTimestamp 
@@ -477,7 +511,6 @@
         const loginPasswordInput = document.getElementById('login-password');
         const loginBtn = document.getElementById('login-btn');
 
-        // [THAY ĐỔI] Cập nhật cấu hình Firebase mới
         const firebaseConfig = {
           apiKey: "AIzaSyAPXZaRlQIiUttyjeANUTnJzLPujrah8nk",
           authDomain: "lxh-rtime.firebaseapp.com",
@@ -489,15 +522,15 @@
           measurementId: "G-3PJGRVJFPG"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const analytics = getAnalytics(app);
 
-        // [THAY ĐỔI] Khởi tạo Realtime Database
         const db = getDatabase(app);
         const auth = getAuth(app);
 
-        loginBtn.addEventListener('click', async () => {
+        // --- Bắt đầu: Cập nhật chức năng đăng nhập ---
+        
+        const handleLogin = async () => {
             const email = "mydinh@pvgaslpg.com.vn";
             const password = loginPasswordInput.value;
 
@@ -506,29 +539,53 @@
                 return;
             }
 
+            // Ẩn form ngay lập tức để tạo cảm giác phản hồi nhanh
+            loginFormContainer.style.display = 'none';
+
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
                 console.log('Đăng nhập thành công:', userCredential.user);
-                loginFormContainer.style.display = 'none';
+                // Hiển thị nội dung chính khi đăng nhập thành công
                 mainContent.style.display = 'block';
             } catch (error) {
                 console.error('Lỗi đăng nhập:', error.code, error.message);
                 alert('Đăng nhập không thành công. Vui lòng kiểm tra lại mật khẩu.');
+                // Hiển thị lại form đăng nhập nếu có lỗi
+                loginFormContainer.style.display = 'block';
+            }
+        };
+
+        // Gán sự kiện click cho nút đăng nhập
+        loginBtn.addEventListener('click', handleLogin);
+
+        // Gán sự kiện keydown cho ô mật khẩu để bắt phím Enter
+        loginPasswordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Ngăn hành vi mặc định của phím Enter
+                handleLogin();
             }
         });
 
+        // --- Kết thúc: Cập nhật chức năng đăng nhập ---
+
         const customerView = document.getElementById('customer-view');
+        const addCustomerView = document.getElementById('add-customer-view');
+        const orderFormView = document.getElementById('order-form-view');
+        const orderListView = document.getElementById('order-list-view');
+
         const customerIdInput = document.getElementById('customerId');
         const customerNameInput = document.getElementById('customerName');
         const saveBtn = document.getElementById('saveBtn');
-        const exportBtn = document.getElementById('exportBtn');
         const importBtn = document.getElementById('importBtn');
         const excelFile = document.getElementById('excelFile');
+
+        const showAddCustomerViewBtn = document.getElementById('showAddCustomerViewBtn');
+        const backToCustomerListBtn3 = document.getElementById('backToCustomerListBtn3');
+        const exportBtn = document.getElementById('exportBtn');
         const deleteAllCustomersBtn = document.getElementById('deleteAllCustomersBtn');
         const customerTableBody = document.querySelector('#customerTable tbody');
         const viewOrdersBtn = document.getElementById('viewOrdersBtn');
 
-        const orderFormView = document.getElementById('order-form-view');
         const orderCustomerName = document.getElementById('orderCustomerName');
         const orderDateInput = document.getElementById('orderDate');
         const orderWarehouseInput = document.getElementById('orderWarehouse');
@@ -544,15 +601,14 @@
         const order11kgInput = document.getElementById('order11kg');
         const submitOrderBtn = document.getElementById('submitOrderBtn');
         const backToCustomerListBtn = document.getElementById('backToCustomerListBtn');
-
-        const orderListView = document.getElementById('order-list-view');
         const orderTableBody = document.querySelector('#orderTable tbody');
         const backToCustomerListBtn2 = document.getElementById('backToCustomerListBtn2');
         const deleteAllOrdersBtn = document.getElementById('deleteAllOrdersBtn');
         const showStatisticsBtn = document.getElementById('showStatisticsBtn');
         const importOrdersBtn = document.getElementById('importOrdersBtn');
         const excelOrderFile = document.getElementById('excelOrderFile');
-
+        const lockOrdersBtn = document.getElementById('lockOrdersBtn'); 
+        const selectAllOrdersBtn = document.getElementById('selectAllOrdersBtn'); 
         const prevPageBtn = document.getElementById('prevPageBtn');
         const nextPageBtn = document.getElementById('nextPageBtn');
         const pageInfoSpan = document.getElementById('pageInfo');
@@ -564,13 +620,21 @@
         let customerData = [];
         let currentCustomerId = '';
         let currentOrderKey = null;
-
+        
         const showCustomerList = () => {
             customerView.classList.remove('hidden');
+            addCustomerView.classList.add('hidden');
             orderFormView.classList.add('hidden');
             orderListView.classList.add('hidden');
             currentOrderKey = null;
             submitOrderBtn.textContent = 'Lưu lệnh';
+        };
+
+        const showAddCustomerView = () => {
+            customerView.classList.add('hidden');
+            addCustomerView.classList.remove('hidden');
+            orderFormView.classList.add('hidden');
+            orderListView.classList.add('hidden');
         };
 
         const showOrderForm = (customerId, customerName) => {
@@ -590,8 +654,9 @@
             order11kgInput.value = '0';
             
             setupOrderInputFields();
-
+            
             customerView.classList.add('hidden');
+            addCustomerView.classList.add('hidden');
             orderFormView.classList.remove('hidden');
             orderListView.classList.add('hidden');
         };
@@ -617,15 +682,23 @@
             setupOrderInputFields();
 
             customerView.classList.add('hidden');
+            addCustomerView.classList.add('hidden');
             orderFormView.classList.remove('hidden');
             orderListView.classList.add('hidden');
         };
         
         const showOrderList = () => {
             customerView.classList.add('hidden');
+            addCustomerView.classList.add('hidden');
             orderFormView.classList.add('hidden');
             orderListView.classList.remove('hidden');
         };
+        
+        showAddCustomerViewBtn.addEventListener('click', showAddCustomerView);
+        backToCustomerListBtn.addEventListener('click', showCustomerList);
+        backToCustomerListBtn2.addEventListener('click', showCustomerList);
+        backToCustomerListBtn3.addEventListener('click', showCustomerList);
+        viewOrdersBtn.addEventListener('click', showOrderList);
 
         saveBtn.addEventListener('click', async () => {
             const customerId = customerIdInput.value.trim();
@@ -663,6 +736,7 @@
                 alert('Lưu khách hàng thành công!');
                 customerIdInput.value = '';
                 customerNameInput.value = '';
+                showCustomerList();
             })
             .catch((error) => {
                 alert('Đã xảy ra lỗi khi lưu khách hàng: ' + error.message);
@@ -780,7 +854,10 @@
                     });
 
                     update(ref(db), updates)
-                        .then(() => { alert(`Đã nhập thành công ${Object.keys(updates).length} khách hàng từ file Excel!`); })
+                        .then(() => { 
+                            alert(`Đã nhập thành công ${Object.keys(updates).length} khách hàng từ file Excel!`); 
+                            showCustomerList();
+                        })
                         .catch(error => { alert("Đã xảy ra lỗi khi nhập dữ liệu: " + error.message); });
                 } else {
                     alert('File Excel không có dữ liệu hoặc cấu trúc không đúng.');
@@ -799,8 +876,6 @@
             XLSX.utils.book_append_sheet(workbook, worksheet, "DanhSachKhachHang");
             XLSX.writeFile(workbook, "danh-sach-khach-hang.xlsx");
         });
-
-        viewOrdersBtn.addEventListener('click', () => { showOrderList(); });
 
         submitOrderBtn.addEventListener('click', () => {
             const orderData = {
@@ -837,6 +912,7 @@
                 });
             } else {
                 orderData.createdAt = serverTimestamp();
+                orderData.isLocked = false; 
                 const ordersRef = ref(db, 'orders-md');
                 push(ordersRef, orderData)
                 .then(() => {
@@ -863,9 +939,6 @@
                 alert('Mật khẩu không đúng. Vui lòng thử lại.');
             }
         });
-
-        backToCustomerListBtn.addEventListener('click', () => { showCustomerList(); });
-        backToCustomerListBtn2.addEventListener('click', () => { showCustomerList(); });
         
         importOrdersBtn.addEventListener('click', () => {
             const password = prompt('Vui lòng nhập mật khẩu để nhập danh sách lệnh:');
@@ -910,7 +983,8 @@
                         ch45Dual: Number(row['45 kg van kép']) || 0,
                         chai12kg: Number(row['Chai 12 kg']) || 0,
                         chai11kg: Number(row['Chai 11 kg']) || 0,
-                        createdAt: serverTimestamp()
+                        createdAt: serverTimestamp(),
+                        isLocked: false 
                     };
                     importPromises.push(push(ordersRef, orderData));
                 });
@@ -924,6 +998,40 @@
                     });
             };
             reader.readAsArrayBuffer(file);
+        });
+        
+        lockOrdersBtn.addEventListener('click', () => {
+            const selectedCheckboxes = document.querySelectorAll('#orderTable tbody input[type="checkbox"]:checked');
+            if (selectedCheckboxes.length === 0) {
+                alert('Vui lòng chọn ít nhất một lệnh để khoá.');
+                return;
+            }
+
+            const confirmation = confirm('Bạn có muốn khoá các lệnh đã chọn? Nếu đã khoá thì không thể quay lại để sửa các lệnh này nữa.');
+            
+            if (confirmation) {
+                const updates = {};
+                selectedCheckboxes.forEach(checkbox => {
+                    const orderKey = checkbox.dataset.key;
+                    updates[`/orders-md/${orderKey}/isLocked`] = true;
+                });
+                
+                update(ref(db), updates)
+                    .then(() => {
+                        alert('Đã khoá các lệnh đã chọn thành công!');
+                    })
+                    .catch((error) => {
+                        alert('Đã xảy ra lỗi khi khoá lệnh: ' + error.message);
+                    });
+            }
+        });
+        
+        selectAllOrdersBtn.addEventListener('click', () => {
+            const allCheckboxes = document.querySelectorAll('#orderTable tbody input[type="checkbox"]');
+            const isAnyUnchecked = Array.from(allCheckboxes).some(cb => !cb.checked);
+            allCheckboxes.forEach(checkbox => {
+                checkbox.checked = isAnyUnchecked;
+            });
         });
 
         const orderTemplateHTML = `
@@ -1239,26 +1347,42 @@
             ordersToDisplay.forEach((order) => {
                 const row = orderTableBody.insertRow();
                 
-                row.insertCell(0).textContent = order.orderNumber;
-                row.insertCell(1).textContent = order.customerName;
-                row.insertCell(2).textContent = order.date;
-                row.insertCell(3).textContent = order.warehouse;
-                row.insertCell(4).textContent = order.vehicle;
-                row.insertCell(5).textContent = order.lpg45kg;
-                row.insertCell(6).textContent = order.L45dual;
-                row.insertCell(7).textContent = order.lpg12kg;
-                row.insertCell(8).textContent = order.lpg11kg;
-                row.insertCell(9).textContent = order.chai45kg;
-                row.insertCell(10).textContent = order.ch45Dual;
-                row.insertCell(11).textContent = order.chai12kg;
-                row.insertCell(12).textContent = order.chai11kg;
+                if (order.isLocked) {
+                    row.classList.add('locked-order');
+                }
                 
-                const actionsCell = row.insertCell(13);
+                const checkboxCell = row.insertCell(0);
+                checkboxCell.classList.add('checkbox-col');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.dataset.key = order.key; 
+                checkboxCell.appendChild(checkbox);
+
+                row.insertCell(1).textContent = order.orderNumber;
+                row.insertCell(2).textContent = order.customerName;
+                row.insertCell(3).textContent = order.date;
+                row.insertCell(4).textContent = order.warehouse;
+                row.insertCell(5).textContent = order.vehicle;
+                row.insertCell(6).textContent = order.lpg45kg;
+                row.insertCell(7).textContent = order.L45dual;
+                row.insertCell(8).textContent = order.lpg12kg;
+                row.insertCell(9).textContent = order.lpg11kg;
+                row.insertCell(10).textContent = order.chai45kg;
+                row.insertCell(11).textContent = order.ch45Dual;
+                row.insertCell(12).textContent = order.chai12kg;
+                row.insertCell(13).textContent = order.chai11kg;
+                
+                const actionsCell = row.insertCell(14);
                 actionsCell.classList.add('action-buttons');
 
                 const editBtn = document.createElement('button');
                 editBtn.textContent = 'Sửa lệnh';
                 editBtn.className = 'edit-btn';
+                
+                if (order.isLocked) {
+                    editBtn.disabled = true;
+                }
+                
                 editBtn.addEventListener('click', () => {
                     const password = prompt('Vui lòng nhập mật khẩu để sửa lệnh:');
                     if (password === '00000') {
@@ -1294,11 +1418,9 @@
                 order.orderNumber = index + 1;
             });
 
-            // Đảo ngược mảng để lệnh mới nhất lên đầu
             allOrders.reverse();
 
             const totalPages = Math.ceil(allOrders.length / ITEMS_PER_PAGE);
-            // Sau khi đảo ngược, hiển thị trang đầu tiên
             currentPage = 1;
             renderOrdersForPage(currentPage);
         });
