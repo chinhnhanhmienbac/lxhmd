@@ -967,13 +967,16 @@
 
                 const importPromises = [];
                 const ordersRef = ref(db, 'orders-md');
-                importedData.forEach(row => {
+                const clientBatchTimestamp = new Date().getTime(); 
+
+                importedData.forEach((row, index) => {
                     const orderData = {
                         customerName: row['Tên Khách hàng'] || '',
                         date: row['Ngày tháng'] || '',
                         warehouse: row['Kho xuất'] || '',
                         transporter: row['Người vận chuyển'] || '',
                         vehicle: row['Số xe'] || '',
+                        deliveryLocation: row['Địa điểm giao hàng'] || '',
                         lpg45kg: Number(row['LPG 45 kg']) || 0,
                         L45dual: Number(row['LPG 45 kép']) || 0,
                         lpg12kg: Number(row['LPG 12 kg']) || 0,
@@ -982,7 +985,7 @@
                         ch45Dual: Number(row['45 kg van kép']) || 0,
                         chai12kg: Number(row['Chai 12 kg']) || 0,
                         chai11kg: Number(row['Chai 11 kg']) || 0,
-                        createdAt: serverTimestamp(),
+                        createdAt: clientBatchTimestamp + index,
                         isLocked: false 
                     };
                     importPromises.push(push(ordersRef, orderData));
@@ -1440,21 +1443,28 @@
             }
         });
 
-        // Bắt đầu: Cập nhật chức năng xuất Excel
         showStatisticsBtn.addEventListener('click', () => {
             if (allOrders.length === 0) {
                 alert('Không có dữ liệu để xuất file Excel.');
                 return;
             }
 
-            const processedData = allOrders.map(order => ({
+            // Bắt đầu: Sửa lỗi sắp xếp khi xuất Excel
+            // Tạo một bản sao của mảng để không làm thay đổi thứ tự hiển thị trên giao diện
+            const sortedOrdersForExport = [...allOrders];
+
+            // Sắp xếp bản sao theo số thứ tự tăng dần (số nhỏ ở trên)
+            sortedOrdersForExport.sort((a, b) => a.orderNumber - b.orderNumber);
+
+            const processedData = sortedOrdersForExport.map(order => ({
+            // Kết thúc: Sửa lỗi sắp xếp khi xuất Excel
                 'Số thứ tự': order.orderNumber,
                 'Tên Khách hàng': order.customerName,
                 'Ngày tháng': order.date,
                 'Kho xuất': order.warehouse,
                 'Người vận chuyển': order.transporter,
                 'Số xe': order.vehicle,
-                'Địa điểm giao hàng': order.deliveryLocation || '', // Thêm trường mới vào đây
+                'Địa điểm giao hàng': order.deliveryLocation || '',
                 'LPG 45 kg': order.lpg45kg,
                 'LPG 45 kép': order.L45dual,
                 'LPG 12 kg': order.lpg12kg,
@@ -1470,7 +1480,6 @@
             XLSX.utils.book_append_sheet(workbook, worksheet, "ThongKeLenh");
             XLSX.writeFile(workbook, "thong-ke-toan-bo-lenh.xlsx");
         });
-        // Kết thúc: Cập nhật chức năng xuất Excel
     </script>
 </body>
 </html>
