@@ -406,6 +406,10 @@
                             <label for="orderVehicle">Số xe:</label>
                             <input type="text" id="orderVehicle">
                         </div>
+                        <div class="form-group">
+                            <label for="orderDeliveryLocation">Địa điểm giao hàng:</label>
+                            <input type="text" id="orderDeliveryLocation">
+                        </div>
                     </div>
                     <div class="right-column">
                         <div class="form-group">
@@ -527,8 +531,6 @@
 
         const db = getDatabase(app);
         const auth = getAuth(app);
-
-        // --- Bắt đầu: Cập nhật chức năng đăng nhập ---
         
         const handleLogin = async () => {
             const email = "mydinh@pvgaslpg.com.vn";
@@ -539,34 +541,27 @@
                 return;
             }
 
-            // Ẩn form ngay lập tức để tạo cảm giác phản hồi nhanh
             loginFormContainer.style.display = 'none';
 
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
                 console.log('Đăng nhập thành công:', userCredential.user);
-                // Hiển thị nội dung chính khi đăng nhập thành công
                 mainContent.style.display = 'block';
             } catch (error) {
                 console.error('Lỗi đăng nhập:', error.code, error.message);
                 alert('Đăng nhập không thành công. Vui lòng kiểm tra lại mật khẩu.');
-                // Hiển thị lại form đăng nhập nếu có lỗi
                 loginFormContainer.style.display = 'block';
             }
         };
 
-        // Gán sự kiện click cho nút đăng nhập
         loginBtn.addEventListener('click', handleLogin);
 
-        // Gán sự kiện keydown cho ô mật khẩu để bắt phím Enter
         loginPasswordInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                e.preventDefault(); // Ngăn hành vi mặc định của phím Enter
+                e.preventDefault();
                 handleLogin();
             }
         });
-
-        // --- Kết thúc: Cập nhật chức năng đăng nhập ---
 
         const customerView = document.getElementById('customer-view');
         const addCustomerView = document.getElementById('add-customer-view');
@@ -591,6 +586,7 @@
         const orderWarehouseInput = document.getElementById('orderWarehouse');
         const orderTransporterInput = document.getElementById('orderTransporter');
         const orderVehicleInput = document.getElementById('orderVehicle');
+        const orderDeliveryLocationInput = document.getElementById('orderDeliveryLocation');
         const orderLpg45kgInput = document.getElementById('orderLpg45kg');
         const orderL45dualInput = document.getElementById('orderL45dual');
         const orderLpg12kgInput = document.getElementById('orderLpg12kg');
@@ -644,6 +640,7 @@
             orderWarehouseInput.value = 'KHO MỸ ĐÌNH';
             orderTransporterInput.value = '';
             orderVehicleInput.value = '';
+            orderDeliveryLocationInput.value = '';
             orderLpg45kgInput.value = '0';
             orderL45dualInput.value = '0';
             orderLpg12kgInput.value = '0';
@@ -668,6 +665,7 @@
             orderWarehouseInput.value = order.warehouse;
             orderTransporterInput.value = order.transporter;
             orderVehicleInput.value = order.vehicle;
+            orderDeliveryLocationInput.value = order.deliveryLocation || '';
             orderLpg45kgInput.value = order.lpg45kg;
             orderL45dualInput.value = order.L45dual;
             orderLpg12kgInput.value = order.lpg12kg;
@@ -884,6 +882,7 @@
                 warehouse: orderWarehouseInput.value,
                 transporter: orderTransporterInput.value,
                 vehicle: orderVehicleInput.value,
+                deliveryLocation: orderDeliveryLocationInput.value,
                 lpg45kg: Number(orderLpg45kgInput.value) || 0,
                 L45dual: Number(orderL45dualInput.value) || 0,
                 lpg12kg: Number(orderLpg12kgInput.value) || 0,
@@ -1101,7 +1100,7 @@
                   <td colspan=2 style="padding: 5px;"><b>Người nhận hàng:</b><br>customerName</td>
                  </tr>
                  <tr>
-                  <td colspan=4 rowspan=2 style="border-top: none;">&nbsp;</td>
+                  <td colspan=4 rowspan=2 style="border-top: none; padding: 5px; vertical-align: top;">deliveryLocation</td>
                   <td style="padding: 5px;">Số CCCD</td>
                   <td style="padding: 5px;">&nbsp;</td>
                  </tr>
@@ -1299,6 +1298,7 @@
                 customerName: orderData.customerName,
                 transporter: orderData.transporter,
                 vehicle: orderData.vehicle,
+                deliveryLocation: orderData.deliveryLocation || '',
                 lpg45kg: orderData.lpg45kg,
                 L45dual: orderData.L45dual,
                 lpg12kg: orderData.lpg12kg,
@@ -1440,6 +1440,7 @@
             }
         });
 
+        // Bắt đầu: Cập nhật chức năng xuất Excel
         showStatisticsBtn.addEventListener('click', () => {
             if (allOrders.length === 0) {
                 alert('Không có dữ liệu để xuất file Excel.');
@@ -1453,6 +1454,7 @@
                 'Kho xuất': order.warehouse,
                 'Người vận chuyển': order.transporter,
                 'Số xe': order.vehicle,
+                'Địa điểm giao hàng': order.deliveryLocation || '', // Thêm trường mới vào đây
                 'LPG 45 kg': order.lpg45kg,
                 'LPG 45 kép': order.L45dual,
                 'LPG 12 kg': order.lpg12kg,
@@ -1468,6 +1470,7 @@
             XLSX.utils.book_append_sheet(workbook, worksheet, "ThongKeLenh");
             XLSX.writeFile(workbook, "thong-ke-toan-bo-lenh.xlsx");
         });
+        // Kết thúc: Cập nhật chức năng xuất Excel
     </script>
 </body>
 </html>
