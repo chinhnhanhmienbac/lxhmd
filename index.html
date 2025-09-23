@@ -99,12 +99,18 @@
             margin-bottom: 15px;
         }
 
-        input[type="text"], input[type="number"], input[type="date"] {
+        input[type="text"], input[type="number"], input[type="date"], select {
             width: 100%;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
             box-sizing: border-box;
+            font-size: 16px;
+        }
+        
+        input:read-only {
+            background-color: #f0f0f0;
+            cursor: not-allowed;
         }
 
         button {
@@ -147,6 +153,7 @@
             background-color: #3498db;
             padding: 5px 10px;
             font-size: 14px;
+            margin-left: 5px;
         }
 
         button.statistics-btn {
@@ -218,31 +225,18 @@
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            align-items: center;
         }
         
-        .statistics-section {
-            background-color: #ecf0f1;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .statistics-section .form-group {
+        .year-selector-container {
             display: flex;
             align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
+            gap: 5px;
         }
-
-        .statistics-section .form-group label {
-            min-width: 150px;
-        }
-
-        .statistics-section .form-group input {
-            flex-grow: 1;
+        
+        .year-selector-container select {
+            width: auto;
+            padding: 8px;
         }
 
         table {
@@ -373,6 +367,14 @@
                     <label for="customerName">Tên khách hàng:</label>
                     <input type="text" id="customerName" placeholder="Tên khách hàng">
                 </div>
+                <div class="form-group">
+                    <label for="customerTransporter">Người vận chuyển:</label>
+                    <input type="text" id="customerTransporter" placeholder="Nhập người vận chuyển (nếu có)">
+                </div>
+                <div class="form-group">
+                    <label for="customerVehicle">Số xe:</label>
+                    <input type="text" id="customerVehicle" placeholder="Nhập số xe (nếu có)">
+                </div>
                 <button id="saveBtn">Lưu khách hàng</button>
             </section>
 
@@ -383,6 +385,30 @@
             </section>
             
             <button id="backToCustomerListBtn3">Quay lại</button>
+        </div>
+
+        <div id="edit-customer-view" class="hidden">
+            <section class="input-section">
+                <h2>Bổ sung thông tin Khách hàng</h2>
+                <div class="form-group">
+                    <label for="editCustomerId">Mã số khách hàng:</label>
+                    <input type="text" id="editCustomerId" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="editCustomerName">Tên khách hàng:</label>
+                    <input type="text" id="editCustomerName" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="editCustomerTransporter">Người vận chuyển:</label>
+                    <input type="text" id="editCustomerTransporter" placeholder="Nhập người vận chuyển mặc định">
+                </div>
+                <div class="form-group">
+                    <label for="editCustomerVehicle">Số xe:</label>
+                    <input type="text" id="editCustomerVehicle" placeholder="Nhập số xe mặc định">
+                </div>
+                <button id="updateCustomerBtn">Lưu thay đổi</button>
+                <button id="backToCustomerListBtn4">Quay lại</button>
+            </section>
         </div>
 
         <div id="order-form-view" class="hidden">
@@ -456,8 +482,12 @@
         <div id="order-list-view" class="hidden">
             <section class="list-section">
                 <div class="list-header">
-                    <h2>Danh sách các Lệnh Xuất Hàng</h2>
+                    <h2>Danh sách các Lệnh Xuất Hàng năm <span id="activeYearDisplay"></span></h2>
                     <div class="list-header-buttons">
+                        <div class="year-selector-container">
+                            <label for="yearSelector">Chọn năm:</label>
+                            <select id="yearSelector"></select>
+                        </div>
                         <button id="selectAllOrdersBtn">Chọn tất cả</button> 
                         <button id="lockOrdersBtn" class="lock-orders-btn">Khoá lệnh</button> 
                         <button id="importOrdersBtn" class="import-orders-btn">Nhập danh sách lệnh</button>
@@ -567,9 +597,12 @@
         const addCustomerView = document.getElementById('add-customer-view');
         const orderFormView = document.getElementById('order-form-view');
         const orderListView = document.getElementById('order-list-view');
+        const editCustomerView = document.getElementById('edit-customer-view');
 
         const customerIdInput = document.getElementById('customerId');
         const customerNameInput = document.getElementById('customerName');
+        const customerTransporterInput = document.getElementById('customerTransporter');
+        const customerVehicleInput = document.getElementById('customerVehicle');
         const saveBtn = document.getElementById('saveBtn');
         const importBtn = document.getElementById('importBtn');
         const excelFile = document.getElementById('excelFile');
@@ -580,6 +613,13 @@
         const deleteAllCustomersBtn = document.getElementById('deleteAllCustomersBtn');
         const customerTableBody = document.querySelector('#customerTable tbody');
         const viewOrdersBtn = document.getElementById('viewOrdersBtn');
+        
+        const editCustomerIdInput = document.getElementById('editCustomerId');
+        const editCustomerNameInput = document.getElementById('editCustomerName');
+        const editCustomerTransporterInput = document.getElementById('editCustomerTransporter');
+        const editCustomerVehicleInput = document.getElementById('editCustomerVehicle');
+        const updateCustomerBtn = document.getElementById('updateCustomerBtn');
+        const backToCustomerListBtn4 = document.getElementById('backToCustomerListBtn4');
 
         const orderCustomerName = document.getElementById('orderCustomerName');
         const orderDateInput = document.getElementById('orderDate');
@@ -608,6 +648,8 @@
         const prevPageBtn = document.getElementById('prevPageBtn');
         const nextPageBtn = document.getElementById('nextPageBtn');
         const pageInfoSpan = document.getElementById('pageInfo');
+        const activeYearDisplay = document.getElementById('activeYearDisplay');
+        const yearSelector = document.getElementById('yearSelector');
 
         const ITEMS_PER_PAGE = 50;
         let currentPage = 1;
@@ -615,14 +657,20 @@
 
         let customerData = [];
         let currentCustomerId = '';
+        let currentEditingCustomerKey = null;
         let currentOrderKey = null;
+        let activeYear = new Date().getFullYear();
+        let currentEditingOrder = null;
         
         const showCustomerList = () => {
             customerView.classList.remove('hidden');
             addCustomerView.classList.add('hidden');
             orderFormView.classList.add('hidden');
             orderListView.classList.add('hidden');
+            editCustomerView.classList.add('hidden');
             currentOrderKey = null;
+            currentEditingOrder = null; 
+            currentEditingCustomerKey = null;
             submitOrderBtn.textContent = 'Lưu lệnh';
         };
 
@@ -631,15 +679,18 @@
             addCustomerView.classList.remove('hidden');
             orderFormView.classList.add('hidden');
             orderListView.classList.add('hidden');
+            editCustomerView.classList.add('hidden');
         };
 
-        const showOrderForm = (customerId, customerName) => {
-            currentCustomerId = customerId;
-            orderCustomerName.textContent = customerName;
+        const showOrderForm = (customer) => {
+            currentCustomerId = customer.id;
+            orderCustomerName.textContent = customer.name;
+
+            orderTransporterInput.value = customer.transporter || '';
+            orderVehicleInput.value = customer.vehicle || '';
+            
             orderDateInput.value = new Date().toLocaleDateString('vi-VN');
             orderWarehouseInput.value = 'KHO MỸ ĐÌNH';
-            orderTransporterInput.value = '';
-            orderVehicleInput.value = '';
             orderDeliveryLocationInput.value = '';
             orderLpg45kgInput.value = '0';
             orderL45dualInput.value = '0';
@@ -656,10 +707,12 @@
             addCustomerView.classList.add('hidden');
             orderFormView.classList.remove('hidden');
             orderListView.classList.add('hidden');
+            editCustomerView.classList.add('hidden');
         };
         
         const showEditOrderForm = (orderKey, order) => {
             currentOrderKey = orderKey;
+            currentEditingOrder = order; 
             orderCustomerName.textContent = order.customerName;
             orderDateInput.value = order.date;
             orderWarehouseInput.value = order.warehouse;
@@ -683,6 +736,7 @@
             addCustomerView.classList.add('hidden');
             orderFormView.classList.remove('hidden');
             orderListView.classList.add('hidden');
+            editCustomerView.classList.add('hidden');
         };
         
         const showOrderList = () => {
@@ -690,17 +744,85 @@
             addCustomerView.classList.add('hidden');
             orderFormView.classList.add('hidden');
             orderListView.classList.remove('hidden');
+            editCustomerView.classList.add('hidden');
+        };
+
+        const showEditCustomerView = (customer) => {
+            currentEditingCustomerKey = customer.key;
+            editCustomerIdInput.value = customer.originalId || customer.id;
+            editCustomerNameInput.value = customer.name;
+            editCustomerTransporterInput.value = customer.transporter || '';
+            editCustomerVehicleInput.value = customer.vehicle || '';
+            
+            customerView.classList.add('hidden');
+            addCustomerView.classList.add('hidden');
+            orderFormView.classList.add('hidden');
+            orderListView.classList.add('hidden');
+            editCustomerView.classList.remove('hidden');
         };
         
         showAddCustomerViewBtn.addEventListener('click', showAddCustomerView);
         backToCustomerListBtn.addEventListener('click', showCustomerList);
         backToCustomerListBtn2.addEventListener('click', showCustomerList);
         backToCustomerListBtn3.addEventListener('click', showCustomerList);
-        viewOrdersBtn.addEventListener('click', showOrderList);
+        backToCustomerListBtn4.addEventListener('click', showCustomerList);
+
+        viewOrdersBtn.addEventListener('click', async () => {
+            activeYear = new Date().getFullYear();
+            activeYearDisplay.textContent = activeYear;
+
+            await populateYearSelector();
+            await fetchAndDisplayOrders(activeYear);
+            showOrderList();
+        });
+        
+        // --- START CHANGE: Simplified populateYearSelector, removed legacy check ---
+        const populateYearSelector = async () => {
+            const years = new Set();
+            const dbRef = ref(db);
+            const snapshot = await get(dbRef);
+
+            if (snapshot.exists()) {
+                const allData = snapshot.val();
+                for (const key in allData) {
+                    const match = key.match(/^orders-md(\d{4})$/);
+                    if (match && match[1]) {
+                        years.add(match[1]);
+                    }
+                }
+            }
+
+            const sortedYears = Array.from(years).sort((a, b) => b - a);
+
+            yearSelector.innerHTML = '';
+            sortedYears.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelector.appendChild(option);
+            });
+            
+            if (years.has(String(activeYear))) {
+                yearSelector.value = activeYear;
+            } else if (sortedYears.length > 0) {
+                yearSelector.value = sortedYears[0];
+                activeYear = sortedYears[0];
+                activeYearDisplay.textContent = activeYear;
+            }
+        };
+        // --- END CHANGE ---
+        
+        yearSelector.addEventListener('change', async (event) => {
+            activeYear = event.target.value;
+            activeYearDisplay.textContent = activeYear;
+            await fetchAndDisplayOrders(activeYear);
+        });
 
         saveBtn.addEventListener('click', async () => {
             const customerId = customerIdInput.value.trim();
             const customerName = customerNameInput.value.trim();
+            const transporter = customerTransporterInput.value.trim();
+            const vehicle = customerVehicleInput.value.trim();
 
             if (customerId === '' || customerName === '') {
                 alert('Vui lòng nhập đầy đủ Mã số và Tên khách hàng.');
@@ -728,12 +850,16 @@
             set(customerRef, {
                 id: safeCustomerId,
                 originalId: customerId,
-                name: customerName
+                name: customerName,
+                transporter: transporter,
+                vehicle: vehicle
             })
             .then(() => {
                 alert('Lưu khách hàng thành công!');
                 customerIdInput.value = '';
                 customerNameInput.value = '';
+                customerTransporterInput.value = '';
+                customerVehicleInput.value = '';
                 showCustomerList();
             })
             .catch((error) => {
@@ -741,6 +867,27 @@
             });
         });
         
+        updateCustomerBtn.addEventListener('click', async () => {
+            if (!currentEditingCustomerKey) {
+                alert('Không tìm thấy thông tin khách hàng để cập nhật.');
+                return;
+            }
+
+            const updates = {
+                transporter: editCustomerTransporterInput.value.trim(),
+                vehicle: editCustomerVehicleInput.value.trim()
+            };
+
+            const customerRef = ref(db, 'customers/' + currentEditingCustomerKey);
+            try {
+                await update(customerRef, updates);
+                alert('Cập nhật thông tin bổ sung thành công!');
+                showCustomerList();
+            } catch (error) {
+                alert('Đã xảy ra lỗi khi cập nhật: ' + error.message);
+            }
+        });
+
         const deleteCustomer = (customerIdKey) => {
             const password = prompt('Vui lòng nhập mật khẩu để xóa:');
             if (password === '54321') {
@@ -792,7 +939,9 @@
                 customerData.push({
                     'Thứ tự': index,
                     'Mã số': displayedId,
-                    'Tên khách hàng': customer.name
+                    'Tên khách hàng': customer.name,
+                    'Người vận chuyển': customer.transporter || '',
+                    'Số xe': customer.vehicle || ''
                 });
 
                 const row = customerTableBody.insertRow();
@@ -807,9 +956,17 @@
                 orderBtn.textContent = 'Lệnh XH';
                 orderBtn.className = 'order-btn';
                 orderBtn.addEventListener('click', () => {
-                    showOrderForm(customer.id, customer.name);
+                    showOrderForm(customer);
                 });
                 actionsCell.appendChild(orderBtn);
+
+                const editInfoBtn = document.createElement('button');
+                editInfoBtn.textContent = 'B.sung T.tin';
+                editInfoBtn.className = 'edit-btn';
+                editInfoBtn.addEventListener('click', () => {
+                    showEditCustomerView(customer);
+                });
+                actionsCell.appendChild(editInfoBtn);
 
                 const deleteBtn = document.createElement('button');
                 deleteBtn.textContent = 'Xoá';
@@ -844,7 +1001,9 @@
                                 const customerPayload = {
                                     id: safeCustomerId,
                                     originalId: String(originalId).trim(),
-                                    name: customerName
+                                    name: customerName,
+                                    transporter: row['Người vận chuyển'] || '',
+                                    vehicle: row['Số xe'] || ''
                                 };
                                 updates['/customers/' + safeCustomerId] = customerPayload;
                             }
@@ -875,7 +1034,8 @@
             XLSX.writeFile(workbook, "danh-sach-khach-hang.xlsx");
         });
 
-        submitOrderBtn.addEventListener('click', () => {
+        // --- START CHANGE: Simplified submitOrderBtn listener, removed legacy logic ---
+        submitOrderBtn.addEventListener('click', async () => {
             const orderData = {
                 customerId: currentCustomerId,
                 date: orderDateInput.value,
@@ -899,43 +1059,63 @@
                 return;
             }
 
-            if (currentOrderKey) {
-                const orderRef = ref(db, 'orders-md/' + currentOrderKey);
-                update(orderRef, orderData)
-                .then(() => {
-                    alert('Đã cập nhật lệnh thành công!');
-                    showCustomerList();
-                })
-                .catch(error => {
-                    alert('Lỗi khi cập nhật lệnh: ' + error.message);
-                });
-            } else {
-                orderData.createdAt = serverTimestamp();
-                orderData.isLocked = false; 
-                const ordersRef = ref(db, 'orders-md');
-                push(ordersRef, orderData)
-                .then(() => {
+            const dateParts = orderData.date.split('/');
+            if (dateParts.length !== 3 || dateParts[2].length !== 4) {
+                 alert('Ngày tháng không hợp lệ. Vui lòng kiểm tra lại (định dạng dd/mm/yyyy).');
+                 return;
+            }
+            const orderYear = dateParts[2];
+            const nodeName = 'orders-md' + orderYear;
+
+            try {
+                if (currentOrderKey && currentEditingOrder) { 
+                    const oldYear = currentEditingOrder.date.split('/')[2];
+                    const sourceRef = ref(db, `orders-md${oldYear}/${currentOrderKey}`);
+                    const destinationRef = ref(db, `${nodeName}/${currentOrderKey}`);
+
+                    if (orderYear !== oldYear) {
+                        await remove(sourceRef);
+                        await set(destinationRef, orderData);
+                        alert('Đã cập nhật và di chuyển lệnh sang năm mới thành công!');
+                    } else {
+                        await update(destinationRef, orderData);
+                        alert('Đã cập nhật lệnh thành công!');
+                    }
+                } else { 
+                    orderData.createdAt = serverTimestamp();
+                    orderData.isLocked = false; 
+                    const ordersRef = ref(db, nodeName);
+                    await push(ordersRef, orderData);
                     alert('Đã lưu lệnh thành công!');
-                    showCustomerList();
-                })
-                .catch(error => {
-                    alert('Lỗi khi lưu lệnh: ' + error.message);
-                });
+                }
+                showCustomerList();
+            } catch (error) {
+                alert('Đã xảy ra lỗi: ' + error.message);
             }
         });
+        // --- END CHANGE ---
 
         deleteAllOrdersBtn.addEventListener('click', async () => {
-            const password = prompt('CẢNH BÁO: Thao tác này sẽ xóa toàn bộ danh sách lệnh. Vui lòng nhập mật khẩu để xác nhận:');
-            if (password === '97531') {
-                remove(ref(db, 'orders-md'))
-                .then(() => {
-                    alert('Đã xóa toàn bộ danh sách lệnh thành công!');
-                })
-                .catch((error) => {
-                    alert('Đã xảy ra lỗi khi xóa toàn bộ danh sách lệnh: ' + error.message);
-                });
-            } else {
-                alert('Mật khẩu không đúng. Vui lòng thử lại.');
+            const yearToDelete = prompt(`CẢNH BÁO: Thao tác này sẽ xóa TOÀN BỘ danh sách lệnh của một năm.\nVui lòng nhập năm muốn xóa (ví dụ: ${activeYear}):`, activeYear);
+            if (yearToDelete && yearToDelete.length === 4 && !isNaN(yearToDelete)) {
+                const password = prompt(`Vui lòng nhập mật khẩu để XÁC NHẬN xóa toàn bộ lệnh của năm ${yearToDelete}:`);
+                if (password === '97531') {
+                    const nodeName = 'orders-md' + yearToDelete;
+                    try {
+                        await remove(ref(db, nodeName));
+                        alert(`Đã xóa toàn bộ danh sách lệnh của năm ${yearToDelete} thành công!`);
+                        if (yearToDelete === activeYear) {
+                            allOrders = [];
+                            renderOrdersForPage(1);
+                        }
+                    } catch (error) {
+                        alert(`Đã xảy ra lỗi khi xóa danh sách lệnh: ${error.message}`);
+                    }
+                } else {
+                    alert('Mật khẩu không đúng. Vui lòng thử lại.');
+                }
+            } else if(yearToDelete !== null) {
+                alert("Năm không hợp lệ. Vui lòng nhập một năm gồm 4 chữ số.");
             }
         });
         
@@ -965,43 +1145,62 @@
                     return;
                 }
 
-                const importPromises = [];
-                const ordersRef = ref(db, 'orders-md');
-                const clientBatchTimestamp = new Date().getTime(); 
+                const updates = {};
+                let skippedRows = 0;
 
-                importedData.forEach((row, index) => {
-                    const orderData = {
-                        customerName: row['Tên Khách hàng'] || '',
-                        date: row['Ngày tháng'] || '',
-                        warehouse: row['Kho xuất'] || '',
-                        transporter: row['Người vận chuyển'] || '',
-                        vehicle: row['Số xe'] || '',
-                        deliveryLocation: row['Địa điểm giao hàng'] || '',
-                        lpg45kg: Number(row['LPG 45 kg']) || 0,
-                        L45dual: Number(row['LPG 45 kép']) || 0,
-                        lpg12kg: Number(row['LPG 12 kg']) || 0,
-                        lpg11kg: Number(row['LPG 11 kg']) || 0,
-                        chai45kg: Number(row['Chai 45 kg']) || 0,
-                        ch45Dual: Number(row['45 kg van kép']) || 0,
-                        chai12kg: Number(row['Chai 12 kg']) || 0,
-                        chai11kg: Number(row['Chai 11 kg']) || 0,
-                        createdAt: clientBatchTimestamp + index,
-                        isLocked: false 
-                    };
-                    importPromises.push(push(ordersRef, orderData));
+                importedData.forEach(row => {
+                    const dateStr = row['Ngày tháng'] || '';
+                    const year = dateStr.split('/')[2];
+
+                    if (year && year.length === 4) {
+                        const nodeName = `orders-md${year}`;
+                        const newOrderRef = push(ref(db, nodeName)); 
+
+                        const orderData = {
+                            customerName: row['Tên Khách hàng'] || '',
+                            date: dateStr,
+                            warehouse: row['Kho xuất'] || '',
+                            transporter: row['Người vận chuyển'] || '',
+                            vehicle: row['Số xe'] || '',
+                            deliveryLocation: row['Địa điểm giao hàng'] || '',
+                            lpg45kg: Number(row['LPG 45 kg']) || 0,
+                            L45dual: Number(row['LPG 45 kép']) || 0,
+                            lpg12kg: Number(row['LPG 12 kg']) || 0,
+                            lpg11kg: Number(row['LPG 11 kg']) || 0,
+                            chai45kg: Number(row['Chai 45 kg']) || 0,
+                            ch45Dual: Number(row['45 kg van kép']) || 0,
+                            chai12kg: Number(row['Chai 12 kg']) || 0,
+                            chai11kg: Number(row['Chai 11 kg']) || 0,
+                            createdAt: serverTimestamp(),
+                            isLocked: false
+                        };
+                        updates[`${nodeName}/${newOrderRef.key}`] = orderData;
+                    } else {
+                        skippedRows++;
+                        console.warn("Bỏ qua dòng do ngày không hợp lệ hoặc thiếu:", row);
+                    }
                 });
 
-                Promise.all(importPromises)
-                    .then(() => {
-                        alert(`Đã nhập thành công ${importPromises.length} lệnh từ file Excel!`);
-                    })
-                    .catch(error => {
-                        alert("Đã xảy ra lỗi khi nhập dữ liệu: " + error.message);
-                    });
+                if (Object.keys(updates).length > 0) {
+                    update(ref(db), updates)
+                        .then(() => {
+                            let alertMessage = `Đã nhập thành công ${Object.keys(updates).length} lệnh từ file Excel!`;
+                            if (skippedRows > 0) {
+                                alertMessage += `\nĐã bỏ qua ${skippedRows} dòng do định dạng ngày không hợp lệ.`;
+                            }
+                            alert(alertMessage);
+                        })
+                        .catch(error => {
+                            alert("Đã xảy ra lỗi khi nhập dữ liệu: " + error.message);
+                        });
+                } else {
+                     alert('Không có lệnh nào được nhập. Vui lòng kiểm tra định dạng ngày (dd/mm/yyyy) trong file Excel.');
+                }
             };
             reader.readAsArrayBuffer(file);
         });
         
+        // --- START CHANGE: Simplified lockOrdersBtn listener, removed legacy logic ---
         lockOrdersBtn.addEventListener('click', () => {
             const selectedCheckboxes = document.querySelectorAll('#orderTable tbody input[type="checkbox"]:checked');
             if (selectedCheckboxes.length === 0) {
@@ -1015,18 +1214,25 @@
                 const updates = {};
                 selectedCheckboxes.forEach(checkbox => {
                     const orderKey = checkbox.dataset.key;
-                    updates[`/orders-md/${orderKey}/isLocked`] = true;
+                    const orderYear = checkbox.dataset.year;
+
+                    if (orderKey && orderYear) {
+                        const path = `/orders-md${orderYear}/${orderKey}/isLocked`;
+                        updates[path] = true;
+                    }
                 });
                 
                 update(ref(db), updates)
                     .then(() => {
                         alert('Đã khoá các lệnh đã chọn thành công!');
+                        fetchAndDisplayOrders(activeYear);
                     })
                     .catch((error) => {
                         alert('Đã xảy ra lỗi khi khoá lệnh: ' + error.message);
                     });
             }
         });
+        // --- END CHANGE ---
         
         selectAllOrdersBtn.addEventListener('click', () => {
             const allCheckboxes = document.querySelectorAll('#orderTable tbody input[type="checkbox"]');
@@ -1036,7 +1242,6 @@
             });
         });
 
-        // Bắt đầu: Cập nhật mẫu in theo yêu cầu mới nhất
         const orderTemplateHTML = `
             <html>
             <head>
@@ -1239,8 +1444,6 @@
             </body>
             </html>
         `;
-        // Kết thúc: Cập nhật mẫu in
-
         const setupOrderInputFields = () => {
             const numberInputs = [
                 orderLpg45kgInput,
@@ -1362,6 +1565,7 @@
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.dataset.key = order.key; 
+                checkbox.dataset.year = order.year;
                 checkboxCell.appendChild(checkbox);
 
                 row.insertCell(1).textContent = order.orderNumber;
@@ -1410,26 +1614,33 @@
             });
         };
 
-        const ordersQuery = query(ref(db, 'orders-md'), orderByChild('createdAt'));
-        onValue(ordersQuery, (snapshot) => {
+        // --- START CHANGE: Simplified fetchAndDisplayOrders, removed legacy check ---
+        const fetchAndDisplayOrders = async (year) => {
             allOrders = [];
-            if(snapshot.exists()) {
+            
+            const newNodeName = 'orders-md' + year;
+            const newOrdersQuery = query(ref(db, newNodeName), orderByChild('createdAt'));
+            const snapshot = await get(newOrdersQuery);
+            if (snapshot.exists()) {
+                console.log(`Đã tìm thấy dữ liệu trong node: ${newNodeName}`);
                 const ordersObject = snapshot.val();
                 for (const key in ordersObject) {
-                    allOrders.push({ ...ordersObject[key], key: key, orderNumber: 0 });
+                    allOrders.push({ ...ordersObject[key], key: key, orderNumber: 0, year: year });
                 }
+            } else {
+                 alert("Không tìm thấy dữ liệu lệnh nào cho năm " + year + ".");
             }
             
+            allOrders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); 
+
             allOrders.forEach((order, index) => {
-                order.orderNumber = index + 1;
+                order.orderNumber = allOrders.length - index;
             });
-
-            allOrders.reverse();
-
-            const totalPages = Math.ceil(allOrders.length / ITEMS_PER_PAGE);
+            
             currentPage = 1;
             renderOrdersForPage(currentPage);
-        });
+        };
+        // --- END CHANGE ---
 
         prevPageBtn.addEventListener('click', () => {
             if (currentPage > 1) {
@@ -1477,7 +1688,7 @@
             const worksheet = XLSX.utils.json_to_sheet(processedData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "ThongKeLenh");
-            XLSX.writeFile(workbook, "thong-ke-toan-bo-lenh.xlsx");
+            XLSX.writeFile(workbook, `thong-ke-lenh-nam-${activeYear}.xlsx`);
         });
     </script>
 </body>
